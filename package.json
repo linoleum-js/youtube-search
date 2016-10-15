@@ -1,8 +1,13 @@
 {
-	"name": "youtube search",
-	"version": "0.0.1",
-
-	"devDependencies": {
-		
-	}
+  "name": "youtube search",
+  "version": "0.0.1",
+  "devDependencies": {
+    "babel-core": "^6.17.0",
+    "babel-loader": "^6.2.5",
+    "babel-preset-es2015": "^6.16.0",
+    "css-loader": "^0.25.0",
+    "style-loader": "^0.13.1",
+    "text-loader": "0.0.1",
+    "webpack": "^1.13.2"
+  }
 }
