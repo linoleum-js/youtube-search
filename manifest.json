@@ -1,0 +1,27 @@
+
+{
+  "name": "Allow-Control-Allow-Origin: *",
+  "version": "1.0.2",
+  "manifest_version": 2,
+  "description": "Allows to you request any site with ajax from any source. Adds to response 'Allow-Control-Allow-Origin: *' header",
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [{
+    "matches": ["*://*/*"],
+    "js":      ["content.js"],
+    "run_at":    "document_start"
+  }],
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_title": "Allow-Control-Allow-Origin",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+  "web_accessible_resources": ["script.js"]
+}
