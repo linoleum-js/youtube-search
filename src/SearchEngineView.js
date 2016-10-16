@@ -1,13 +1,13 @@
 
 
-import { CONTAINER_CLASS } from './constants';
 import { $, debounce } from './util';
 import MarksView from './MarksView';
 import {
   OPENED_FORM_CLASS,
   BUTTON_OPEN_CLASS,
   BUTTON_CLOSE_CLASS,
-  INPUT_CLASS
+  INPUT_CLASS,
+  CONTAINER_CLASS
 } from './constants';
 
 export default class SearchEngineView {
@@ -16,6 +16,7 @@ export default class SearchEngineView {
     this.open = this.open.bind(this);
     this.close = this.close.bind(this);
     this.handleChange = debounce(1000, this.handleChange.bind(this));
+    this.handleKeyDown = this.handleKeyDown.bind(this);
     this.searchEngine = searchEngine;
     $.on(document, 'DOMContentLoaded', () => {
       this.init();
@@ -59,17 +60,19 @@ export default class SearchEngineView {
     this.$input = $input;
     $.on($buttonOpen, 'click', this.open);
     $.on($buttonClose, 'click', this.close);
-    $.on($input, 'keydown', (event) => {
-      // prevent default actions (i.e. fullscreen)
-      event.stopPropagation();
-      // close on escape
-      if (event.keyCode === 27) {
-        this.close();
-        return;
-      } else {
-        this.handleChange(event);
-      }
-    });
+    $.on($input, 'keydown', this.handleKeyDown);
+  }
+
+  handleKeyDown(event) {
+    // prevent default actions (i.e. fullscreen)
+    event.stopPropagation();
+    // close on escape
+    if (event.keyCode === 27) {
+      this.close();
+      return;
+    } else {
+      this.handleChange(event);
+    }
   }
 
   handleChange(event) {

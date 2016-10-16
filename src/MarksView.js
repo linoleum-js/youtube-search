@@ -15,6 +15,7 @@ export default class MarksView {
     this.markTemplate = require('../templates/mark.html');
   }
 
+  // todo
   getDuration() {
     const html = this.$duration.innerHTML;
     const parts = html.split(':');
@@ -52,8 +53,5 @@ export default class MarksView {
   loadSubtitles() {
     // load subtitles. wut, wut, wut...
     this.$subtitlesButton.click();
-    setInterval(() => {
-      this.$subtitlesButton.click();
-    });
   }
 }

@@ -257,13 +257,13 @@
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _constants = __webpack_require__(4);
-
 	var _util = __webpack_require__(2);
 
 	var _MarksView = __webpack_require__(5);
 
 	var _MarksView2 = _interopRequireDefault(_MarksView);
+
+	var _constants = __webpack_require__(4);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -279,6 +279,7 @@
 	    this.open = this.open.bind(this);
 	    this.close = this.close.bind(this);
 	    this.handleChange = (0, _util.debounce)(1000, this.handleChange.bind(this));
+	    this.handleKeyDown = this.handleKeyDown.bind(this);
 	    this.searchEngine = searchEngine;
 	    _util.$.on(document, 'DOMContentLoaded', function () {
 	      _this.init();
@@ -316,25 +317,26 @@
 	  }, {
 	    key: 'initEvents',
 	    value: function initEvents() {
-	      var _this2 = this;
-
 	      var $buttonOpen = (0, _util.$)(_constants.BUTTON_OPEN_CLASS, this.$node);
 	      var $buttonClose = (0, _util.$)(_constants.BUTTON_CLOSE_CLASS, this.$node);
 	      var $input = (0, _util.$)(_constants.INPUT_CLASS, this.$node);
 	      this.$input = $input;
 	      _util.$.on($buttonOpen, 'click', this.open);
 	      _util.$.on($buttonClose, 'click', this.close);
-	      _util.$.on($input, 'keydown', function (event) {
-	        // prevent default actions (i.e. fullscreen)
-	        event.stopPropagation();
-	        // close on escape
-	        if (event.keyCode === 27) {
-	          _this2.close();
-	          return;
-	        } else {
-	          _this2.handleChange(event);
-	        }
-	      });
+	      _util.$.on($input, 'keydown', this.handleKeyDown);
+	    }
+	  }, {
+	    key: 'handleKeyDown',
+	    value: function handleKeyDown(event) {
+	      // prevent default actions (i.e. fullscreen)
+	      event.stopPropagation();
+	      // close on escape
+	      if (event.keyCode === 27) {
+	        this.close();
+	        return;
+	      } else {
+	        this.handleChange(event);
+	      }
 	    }
 	  }, {
 	    key: 'handleChange',
@@ -419,6 +421,9 @@
 	    this.markTemplate = __webpack_require__(6);
 	  }
 
+	  // todo
+
+
 	  _createClass(MarksView, [{
 	    key: 'getDuration',
 	    value: function getDuration() {
@@ -462,13 +467,8 @@
 	  }, {
 	    key: 'loadSubtitles',
 	    value: function loadSubtitles() {
-	      var _this2 = this;
-
 	      // load subtitles. wut, wut, wut...
 	      this.$subtitlesButton.click();
-	      setInterval(function () {
-	        _this2.$subtitlesButton.click();
-	      });
 	    }
 	  }]);
 
