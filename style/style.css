@@ -2,13 +2,43 @@
 .ms-timeline-mark {
   position: absolute;
   top: -50px;
-  width: 50px;
+  width: 20px;
   height: 20px;
   background: #333;
-  border-radius: 3px;
+  border-radius: 3px 3px 0 0;
   text-align: center;
   line-height: 20px;
   display: inline-block;
+  z-index: 1;
+  font-size: 0;
+  margin-left: 15px;
+  border: 1px solid #f2f2f2;
+}
+
+.ms-timeline-mark span {
+  z-index: 1;
+  position: relative;
+}
+
+.ms-timeline-mark:hover {
+  width: 50px;
+  font-size: 11px;
+  border-radius: 3px;
+  margin-left: 0;
+  z-index: 1;
+}
+
+.ytp-chrome-bottom {
+  z-index: 1002 !important;
+}
+
+.ytp-popup {
+  z-index: 1003 !important;
+}
+
+.ytp-chrome-controls {
+  position: relative;
+  z-index: 1 !important;
 }
 
 .ms-timeline-mark:after {
@@ -17,9 +47,73 @@
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 10px 10px 0 10px;
-  border-color: #333 transparent transparent transparent;
+  background-color: #333;
+  width: 14px;
+  height: 14px;
   left: 50%;
-  bottom: -10px;
-  margin-left: -10px;
+  bottom: -8px;
+  margin-left: -7px;
+  border: 1px solid #f2f2f2;
+  border-left: none;
+  border-top: none;
+  transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
 }
+
+.ms-search-form {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.ms-search-form button {
+  color: #f2f2f2;
+  font-weight: bold;
+  display: inline-block;
+  width: 35px;
+  height: 35px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.ms-search-form button span {
+  position: relative;
+  display: inline-block;
+  transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
+}
+
+
+.ms-search-form input {
+  background-color: rgba(0, 0, 0, .5);
+  border: 1px solid #777;
+  height: 26px;
+  border-radius: 5px;
+  color: #f2f2f2;
+  font-size: 16px;
+  text-indent: 10px;
+}
+
+.ms-search-form input:focus,
+.ms-search-form button:focus {
+  box-shadow: inset 0 0 0 2px rgba(27, 127, 204, .8);
+}
+.ms-search-form input::-webkit-input-placeholder {
+  color: #777;
+  font-weight: normal;
+  font-style: italic;
+}
+
+.ms-search-form input,
+.ms-search-form .ms-close-button {
+  display: none;
+}
+
+.ms-search-form.ms-search-form-opened input,
+.ms-search-form.ms-search-form-opened .ms-close-button {
+  display: inline-block;
+}
+
+.ms-search-form.ms-search-form-opened .ms-search-button {
+  display: none;
+}
+

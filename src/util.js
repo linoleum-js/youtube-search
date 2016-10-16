@@ -4,8 +4,8 @@
  * @param {string} className
  * @return {HTMLElement}
  */
-export function $ (className) {
-  return document.getElementsByClassName(className);
+export function $ (className, element=document) {
+  return element.getElementsByClassName(className)[0];
 }
 
 $.createElement = document.createElement.bind(document);
@@ -69,3 +69,20 @@ export function triggerEvent ($element, eventName) {
 export function padWithZero (number) {
   return number > 9 ? number : '0' + number;
 };
+
+/**
+ * debounce
+ * @param  {number}   delay
+ * @param  {Function} callback
+ * @return {Funciton}
+ */
+export function debounce(delay, callback) {
+  let timeout = null;
+
+  return function () {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      callback.apply(null, arguments);
+    });
+  };
+}

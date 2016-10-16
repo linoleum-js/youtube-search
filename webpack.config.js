@@ -3,9 +3,9 @@ var path = require('path');
 
 module.exports = {
 	context: __dirname,
-	entry: './src/script.js',
+	entry: './src/index.js',
 	output: {
-		path: __dirname,
+		path: path.join(__dirname, 'chrome-extension'),
 		filename: 'script.js'
 	},
 

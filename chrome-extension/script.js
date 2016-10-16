@@ -46,85 +46,101 @@
 
 	'use strict';
 
-	var _util = __webpack_require__(1);
+	var _SearchEngine = __webpack_require__(1);
 
-	var _YtInterface = __webpack_require__(2);
+	var _SearchEngine2 = _interopRequireDefault(_SearchEngine);
 
-	var _YtInterface2 = _interopRequireDefault(_YtInterface);
+	var _SearchEngineView = __webpack_require__(3);
+
+	var _SearchEngineView2 = _interopRequireDefault(_SearchEngineView);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var style = __webpack_require__(5);
+	var style = __webpack_require__(8);
 
-	var send = XMLHttpRequest.prototype.send;
-
-	var markWidth = 50;
-	var markHeight = 20;
-
-	var CONTAINER_CLASS = 'ytp-right-controls';
-	var TIMELINE_CLASS = 'ytp-progress-bar-padding';
-	var SUBTITLES_BUTTON_CLASS = 'ytp-subtitles-button';
-	var DURATION_CLASS = 'ytp-time-duration';
-
-	var $container = void 0;
-	var $timeline = void 0;
-	var $subtitlesButton = void 0;
-	var $duration = void 0;
-
-	var subtitles = void 0;
-	var words = void 0;
-
-	var yt = void 0;
-
-	_util.$.on(document, 'DOMContentLoaded', function (event) {
-		yt = new _YtInterface2.default();
-		$container = (0, _util.$)(CONTAINER_CLASS)[0];
-		$timeline = (0, _util.$)(TIMELINE_CLASS)[0];
-		$subtitlesButton = (0, _util.$)(SUBTITLES_BUTTON_CLASS)[0];
-		$duration = (0, _util.$)(DURATION_CLASS)[0];
-
-		(0, _util.triggerEvent)($subtitlesButton, 'click');
-		(0, _util.triggerEvent)($subtitlesButton, 'click');
-	});
-
-	var searchInWords = function searchInWords(list, query) {
-		var occurrences = list.filter(function (item) {
-			return item.innerHTML.indexOf(query) !== -1;
-		});
-		return occurrences;
-	};
-
-	var getTime = function getTime(word) {
-		return word.parentNode.getAttribute('t') / 1000;
-	};
-
-	var handleSubtitlesLoad = function handleSubtitlesLoad(response) {
-		var parser = new DOMParser();
-		subtitles = parser.parseFromString(response, 'text/xml');
-		words = subtitles.getElementsByTagName('s');
-		words = [].slice.call(words, 0);
-		handleSearch('примерно');
-	};
-
-	var handleSearch = function handleSearch(query) {
-		var result = searchInWords(words, query);
-		var word = result[0];
-		var time = getTime(word);
-		yt.appendMark(time);
-	};
-
-	XMLHttpRequest.prototype.send = function () {
-		this.onload = function () {
-			if (this.responseURL.indexOf('timedtext') === -1) {
-				return;
-			}
-			handleSubtitlesLoad(this.response);
-		};
-		send.apply(this, arguments);
-	};;
+	var searchEngine = new _SearchEngine2.default();
+	var searchEngineView = new _SearchEngineView2.default(searchEngine);
 
 /***/ },
 /* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _util = __webpack_require__(2);
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var SearchEngine = function () {
+	  function SearchEngine() {
+	    _classCallCheck(this, SearchEngine);
+
+	    this.spyOnHttp();
+	  }
+
+	  _createClass(SearchEngine, [{
+	    key: 'searchInWords',
+	    value: function searchInWords(list, query) {
+	      var occurrences = list.filter(function (item) {
+	        return item.innerHTML.indexOf(query) !== -1;
+	      });
+	      return occurrences;
+	    }
+	  }, {
+	    key: 'getTime',
+	    value: function getTime(word) {
+	      return word.parentNode.getAttribute('t') / 1000;
+	    }
+	  }, {
+	    key: 'handleSubtitlesLoad',
+	    value: function handleSubtitlesLoad(response) {
+	      var parser = new DOMParser();
+	      var subtitles = parser.parseFromString(response, 'text/xml');
+	      var words = subtitles.getElementsByTagName('s');
+	      this.words = [].slice.call(words, 0);
+	    }
+	  }, {
+	    key: 'search',
+	    value: function search(query) {
+	      var _this = this;
+
+	      var result = this.searchInWords(this.words, query);
+	      return result.map(function (word) {
+	        return _this.getTime(word);
+	      });
+	    }
+	  }, {
+	    key: 'spyOnHttp',
+	    value: function spyOnHttp() {
+	      var send = XMLHttpRequest.prototype.send;
+	      var self = this;
+
+	      XMLHttpRequest.prototype.send = function () {
+	        this.onload = function () {
+	          if (this.responseURL.indexOf('timedtext') === -1) {
+	            return;
+	          }
+
+	          self.handleSubtitlesLoad(this.response);
+	        };
+	        send.apply(this, arguments);
+	      };
+	    }
+	  }]);
+
+	  return SearchEngine;
+	}();
+
+	exports.default = SearchEngine;
+
+/***/ },
+/* 2 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -136,6 +152,7 @@
 	exports.formatTime = formatTime;
 	exports.triggerEvent = triggerEvent;
 	exports.padWithZero = padWithZero;
+	exports.debounce = debounce;
 
 
 	/**
@@ -143,7 +160,9 @@
 	 * @return {HTMLElement}
 	 */
 	function $(className) {
-	  return document.getElementsByClassName(className);
+	  var element = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : document;
+
+	  return element.getElementsByClassName(className)[0];
 	}
 
 	$.createElement = document.createElement.bind(document);
@@ -207,8 +226,27 @@
 	  return number > 9 ? number : '0' + number;
 	};
 
+	/**
+	 * debounce
+	 * @param  {number}   delay
+	 * @param  {Function} callback
+	 * @return {Funciton}
+	 */
+	function debounce(delay, callback) {
+	  var timeout = null;
+
+	  return function () {
+	    var _arguments = arguments;
+
+	    clearTimeout(timeout);
+	    timeout = setTimeout(function () {
+	      callback.apply(null, _arguments);
+	    });
+	  };
+	}
+
 /***/ },
-/* 2 */
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -219,22 +257,169 @@
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _util = __webpack_require__(1);
+	var _constants = __webpack_require__(4);
 
-	var _constants = __webpack_require__(3);
+	var _util = __webpack_require__(2);
+
+	var _MarksView = __webpack_require__(5);
+
+	var _MarksView2 = _interopRequireDefault(_MarksView);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var YtInterface = function () {
-	  function YtInterface() {
-	    _classCallCheck(this, YtInterface);
+	var SearchEngineView = function () {
+	  function SearchEngineView(searchEngine) {
+	    var _this = this;
 
-	    this.$timeline = (0, _util.$)(_constants.TIMELINE_CLASS)[0];
-	    this.$duration = (0, _util.$)(_constants.DURATION_CLASS)[0];
-	    this.markTemplate = __webpack_require__(4);
+	    _classCallCheck(this, SearchEngineView);
+
+	    this.opened = false;
+	    this.open = this.open.bind(this);
+	    this.close = this.close.bind(this);
+	    this.handleChange = (0, _util.debounce)(1000, this.handleChange.bind(this));
+	    this.searchEngine = searchEngine;
+	    _util.$.on(document, 'DOMContentLoaded', function () {
+	      _this.init();
+	      _this.render();
+	    });
 	  }
 
-	  _createClass(YtInterface, [{
+	  _createClass(SearchEngineView, [{
+	    key: 'init',
+	    value: function init() {
+	      this.$container = (0, _util.$)(_constants.CONTAINER_CLASS);
+	      this.remplate = __webpack_require__(7);
+	      this.marksView = new _MarksView2.default();
+	      this.marksView.loadSubtitles();
+	    }
+	  }, {
+	    key: 'render',
+	    value: function render() {
+	      if (this.$node) {
+	        this.$container.removeChild(this.$node);
+	      }
+	      var tabIndexInput = this.open ? '' : 'tabindex="-1"';
+	      var tabIndexClose = this.open ? 'tabindex="-1"' : '';
+	      this.$node = _util.$.renderFromString(this.remplate, {
+	        className: this.opened ? _constants.OPENED_FORM_CLASS : '',
+	        tabIndexInput: tabIndexInput,
+	        tabIndexClose: tabIndexClose
+	      });
+
+	      this.initEvents();
+
+	      var $firstControl = this.$container.children[0];
+	      this.$container.insertBefore(this.$node, $firstControl);
+	    }
+	  }, {
+	    key: 'initEvents',
+	    value: function initEvents() {
+	      var _this2 = this;
+
+	      var $buttonOpen = (0, _util.$)(_constants.BUTTON_OPEN_CLASS, this.$node);
+	      var $buttonClose = (0, _util.$)(_constants.BUTTON_CLOSE_CLASS, this.$node);
+	      var $input = (0, _util.$)(_constants.INPUT_CLASS, this.$node);
+	      this.$input = $input;
+	      _util.$.on($buttonOpen, 'click', this.open);
+	      _util.$.on($buttonClose, 'click', this.close);
+	      _util.$.on($input, 'keydown', function (event) {
+	        // prevent default actions (i.e. fullscreen)
+	        event.stopPropagation();
+	        // close on escape
+	        if (event.keyCode === 27) {
+	          _this2.close();
+	          return;
+	        } else {
+	          _this2.handleChange(event);
+	        }
+	      });
+	    }
+	  }, {
+	    key: 'handleChange',
+	    value: function handleChange(event) {
+	      this.clear();
+	      var query = this.$input.value;
+	      if (query.length < 3) {
+	        return;
+	      }
+	      var occurrences = this.searchEngine.search(query);
+	      this.marksView.renderMarks(occurrences);
+	    }
+	  }, {
+	    key: 'clear',
+	    value: function clear() {
+	      this.marksView.removeMarks();
+	    }
+	  }, {
+	    key: 'open',
+	    value: function open() {
+	      this.opened = true;
+	      this.render();
+	    }
+	  }, {
+	    key: 'close',
+	    value: function close() {
+	      this.opened = false;
+	      this.$input.value = '';
+	      this.render();
+	      this.marksView.removeMarks();
+	    }
+	  }]);
+
+	  return SearchEngineView;
+	}();
+
+	exports.default = SearchEngineView;
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var CONTAINER_CLASS = exports.CONTAINER_CLASS = 'ytp-right-controls';
+	var TIMELINE_CLASS = exports.TIMELINE_CLASS = 'ytp-progress-bar-padding';
+	var SUBTITLES_BUTTON_CLASS = exports.SUBTITLES_BUTTON_CLASS = 'ytp-subtitles-button';
+	var DURATION_CLASS = exports.DURATION_CLASS = 'ytp-time-duration';
+	var OPENED_FORM_CLASS = exports.OPENED_FORM_CLASS = 'ms-search-form-opened';
+	var BUTTON_OPEN_CLASS = exports.BUTTON_OPEN_CLASS = 'ms-search-button';
+	var BUTTON_CLOSE_CLASS = exports.BUTTON_CLOSE_CLASS = 'ms-close-button';
+	var INPUT_CLASS = exports.INPUT_CLASS = 'ms-search-input';
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _util = __webpack_require__(2);
+
+	var _constants = __webpack_require__(4);
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var MarksView = function () {
+	  function MarksView() {
+	    _classCallCheck(this, MarksView);
+
+	    this.$timeline = (0, _util.$)(_constants.TIMELINE_CLASS);
+	    this.$duration = (0, _util.$)(_constants.DURATION_CLASS);
+	    this.$subtitlesButton = (0, _util.$)(_constants.SUBTITLES_BUTTON_CLASS);
+	    this.markTemplate = __webpack_require__(6);
+	  }
+
+	  _createClass(MarksView, [{
 	    key: 'getDuration',
 	    value: function getDuration() {
 	      var html = this.$duration.innerHTML;
@@ -260,44 +445,61 @@
 
 	      this.$timeline.appendChild($node);
 	    }
+	  }, {
+	    key: 'renderMarks',
+	    value: function renderMarks(list) {
+	      var _this = this;
+
+	      list.forEach(function (time) {
+	        _this.appendMark(time);
+	      });
+	    }
+	  }, {
+	    key: 'removeMarks',
+	    value: function removeMarks() {
+	      this.$timeline.innerHTML = '';
+	    }
+	  }, {
+	    key: 'loadSubtitles',
+	    value: function loadSubtitles() {
+	      var _this2 = this;
+
+	      // load subtitles. wut, wut, wut...
+	      this.$subtitlesButton.click();
+	      setInterval(function () {
+	        _this2.$subtitlesButton.click();
+	      });
+	    }
 	  }]);
 
-	  return YtInterface;
+	  return MarksView;
 	}();
 
-	exports.default = YtInterface;
+	exports.default = MarksView;
 
 /***/ },
-/* 3 */
+/* 6 */
 /***/ function(module, exports) {
 
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var CONTAINER_CLASS = exports.CONTAINER_CLASS = 'ytp-right-controls';
-	var TIMELINE_CLASS = exports.TIMELINE_CLASS = 'ytp-progress-bar-padding';
-	var SUBTITLES_BUTTON_CLASS = exports.SUBTITLES_BUTTON_CLASS = 'ytp-subtitles-button';
-	var DURATION_CLASS = exports.DURATION_CLASS = 'ytp-time-duration';
+	module.exports = "<span class=\"ms-timeline-mark\" style=\"left: {{left}}\">\n  <span>{{time}}</span>\n</span>\n"
 
 /***/ },
-/* 4 */
+/* 7 */
 /***/ function(module, exports) {
 
-	module.exports = "<span class=\"ms-timeline-mark\" style=\"left: {{left}}\">\n  {{time}}\n</span>\n"
+	module.exports = "<div class=\"ms-search-form {{className}}\">\n  <input\n    type=\"text\"\n    class=\"ms-search-input\"\n    {{tabIndexInput}}\n    placeholder=\"Search...\"\n  >\n  <button class=\"ms-search-button\" {{tabIndexOpen}}>\n    <span>⚲</span>\n  </button>\n  <button class=\"ms-close-button\" {{tabIndexInput}}>\n    <span>⚲</span>\n  </button>\n</div>\n"
 
 /***/ },
-/* 5 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(6);
+	var content = __webpack_require__(9);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(8)(content, {});
+	var update = __webpack_require__(11)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -314,21 +516,21 @@
 	}
 
 /***/ },
-/* 6 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(7)();
+	exports = module.exports = __webpack_require__(10)();
 	// imports
 
 
 	// module
-	exports.push([module.id, "\n.ms-timeline-mark {\n  position: absolute;\n  top: -50px;\n  width: 50px;\n  height: 20px;\n  background: #333;\n  border-radius: 3px;\n  text-align: center;\n  line-height: 20px;\n  display: inline-block;\n}\n\n.ms-timeline-mark:after {\n  content: ' ';\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-style: solid;\n  border-width: 10px 10px 0 10px;\n  border-color: #333 transparent transparent transparent;\n  left: 50%;\n  bottom: -10px;\n  margin-left: -10px;\n}\n", ""]);
+	exports.push([module.id, "\n.ms-timeline-mark {\n  position: absolute;\n  top: -50px;\n  width: 20px;\n  height: 20px;\n  background: #333;\n  border-radius: 3px 3px 0 0;\n  text-align: center;\n  line-height: 20px;\n  display: inline-block;\n  z-index: 1;\n  font-size: 0;\n  margin-left: 15px;\n  border: 1px solid #f2f2f2;\n}\n\n.ms-timeline-mark span {\n  z-index: 1;\n  position: relative;\n}\n\n.ms-timeline-mark:hover {\n  width: 50px;\n  font-size: 11px;\n  border-radius: 3px;\n  margin-left: 0;\n  z-index: 1;\n}\n\n.ytp-chrome-bottom {\n  z-index: 1002 !important;\n}\n\n.ytp-popup {\n  z-index: 1003 !important;\n}\n\n.ytp-chrome-controls {\n  position: relative;\n  z-index: 1 !important;\n}\n\n.ms-timeline-mark:after {\n  content: ' ';\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-style: solid;\n  background-color: #333;\n  width: 14px;\n  height: 14px;\n  left: 50%;\n  bottom: -8px;\n  margin-left: -7px;\n  border: 1px solid #f2f2f2;\n  border-left: none;\n  border-top: none;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n.ms-search-form {\n  display: inline-block;\n  vertical-align: top;\n}\n\n.ms-search-form button {\n  color: #f2f2f2;\n  font-weight: bold;\n  display: inline-block;\n  width: 35px;\n  height: 35px;\n  font-size: 16px;\n  cursor: pointer;\n}\n\n.ms-search-form button span {\n  position: relative;\n  display: inline-block;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n\n.ms-search-form input {\n  background-color: rgba(0, 0, 0, .5);\n  border: 1px solid #777;\n  height: 26px;\n  border-radius: 5px;\n  color: #f2f2f2;\n  font-size: 16px;\n  text-indent: 10px;\n}\n\n.ms-search-form input:focus,\n.ms-search-form button:focus {\n  box-shadow: inset 0 0 0 2px rgba(27, 127, 204, .8);\n}\n.ms-search-form input::-webkit-input-placeholder {\n  color: #777;\n  font-weight: normal;\n  font-style: italic;\n}\n\n.ms-search-form input,\n.ms-search-form .ms-close-button {\n  display: none;\n}\n\n.ms-search-form.ms-search-form-opened input,\n.ms-search-form.ms-search-form-opened .ms-close-button {\n  display: inline-block;\n}\n\n.ms-search-form.ms-search-form-opened .ms-search-button {\n  display: none;\n}\n\n", ""]);
 
 	// exports
 
 
 /***/ },
-/* 7 */
+/* 10 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -383,7 +585,7 @@
 	};
 
 /***/ },
-/* 8 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*

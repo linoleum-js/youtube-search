@@ -1,16 +1,17 @@
 
 import {
-  $, formatTime
+  $, formatTime, triggerEvent
 } from './util';
 
 import {
-  DURATION_CLASS, TIMELINE_CLASS
+  DURATION_CLASS, TIMELINE_CLASS, SUBTITLES_BUTTON_CLASS
 } from './constants';
 
-export default class YtInterface {
+export default class MarksView {
   constructor() {
-    this.$timeline = $(TIMELINE_CLASS)[0];
-    this.$duration = $(DURATION_CLASS)[0];
+    this.$timeline = $(TIMELINE_CLASS);
+    this.$duration = $(DURATION_CLASS);
+    this.$subtitlesButton = $(SUBTITLES_BUTTON_CLASS);
     this.markTemplate = require('../templates/mark.html');
   }
 
@@ -36,5 +37,23 @@ export default class YtInterface {
     });
 
     this.$timeline.appendChild($node);
+  }
+
+  renderMarks(list) {
+    list.forEach((time) => {
+      this.appendMark(time);
+    });
+  }
+
+  removeMarks () {
+    this.$timeline.innerHTML = '';
+  }
+
+  loadSubtitles() {
+    // load subtitles. wut, wut, wut...
+    this.$subtitlesButton.click();
+    setInterval(() => {
+      this.$subtitlesButton.click();
+    });
   }
 }
