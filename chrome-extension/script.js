@@ -50,16 +50,16 @@
 
 	var _SearchEngine2 = _interopRequireDefault(_SearchEngine);
 
-	var _SearchEngineView = __webpack_require__(3);
+	var _ControlsView = __webpack_require__(3);
 
-	var _SearchEngineView2 = _interopRequireDefault(_SearchEngineView);
+	var _ControlsView2 = _interopRequireDefault(_ControlsView);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var style = __webpack_require__(8);
+	var style = __webpack_require__(9);
 
 	var searchEngine = new _SearchEngine2.default();
-	var searchEngineView = new _SearchEngineView2.default(searchEngine);
+	var searchEngineView = new _ControlsView2.default(searchEngine);
 
 /***/ },
 /* 1 */
@@ -79,58 +79,72 @@
 
 	var SearchEngine = function () {
 	  function SearchEngine() {
+	    var _this = this;
+
 	    _classCallCheck(this, SearchEngine);
 
-	    this.spyOnHttp();
+	    this.spy = function (xhr) {
+	      if (!xhr.responseURL.includes('timedtext')) {
+	        return;
+	      }
+
+	      _this.handleSubtitlesLoad(xhr.response);
+	    };
+
+	    (0, _util.spyOnHttp)(this.spy);
 	  }
 
 	  _createClass(SearchEngine, [{
-	    key: 'searchInWords',
-	    value: function searchInWords(list, query) {
-	      var occurrences = list.filter(function (item) {
-	        return item.innerHTML.indexOf(query) !== -1;
+	    key: 'searchInChunks',
+	    value: function searchInChunks(chunks, query) {
+	      var occurrences = chunks.filter(function (item) {
+	        return item.textContent.includes(query);
 	      });
 	      return occurrences;
 	    }
+
+	    /**
+	     * get time offset of specified sentence
+	     * @param  {Node} sentence
+	     * @return {number} time in seconds
+	     */
+
 	  }, {
 	    key: 'getTime',
-	    value: function getTime(word) {
-	      return word.parentNode.getAttribute('t') / 1000;
+	    value: function getTime(sentence) {
+	      return sentence.getAttribute('t') / 1000;
 	    }
+
+	    /**
+	     * init textChunks
+	     * @param  {string} response - text that represents subtitles
+	     */
+
 	  }, {
 	    key: 'handleSubtitlesLoad',
 	    value: function handleSubtitlesLoad(response) {
 	      var parser = new DOMParser();
 	      var subtitles = parser.parseFromString(response, 'text/xml');
-	      var words = subtitles.getElementsByTagName('s');
-	      this.words = [].slice.call(words, 0);
+	      var sentences = subtitles.getElementsByTagName('p');
+	      console.log(sentences);
+
+	      this.textChunks = [].slice.call(sentences, 0);
 	    }
+
+	    /**
+	     * @param  {string} query
+	     * @return {Array<string>} occurrences
+	     */
+
 	  }, {
 	    key: 'search',
 	    value: function search(query) {
-	      var _this = this;
+	      var _this2 = this;
 
-	      var result = this.searchInWords(this.words, query);
-	      return result.map(function (word) {
-	        return _this.getTime(word);
+	      var result = this.searchInChunks(this.textChunks, query);
+	      return result.map(function (sentence) {
+	        return _this2.getTime(sentence);
 	      });
-	    }
-	  }, {
-	    key: 'spyOnHttp',
-	    value: function spyOnHttp() {
-	      var send = XMLHttpRequest.prototype.send;
-	      var self = this;
-
-	      XMLHttpRequest.prototype.send = function () {
-	        this.onload = function () {
-	          if (this.responseURL.indexOf('timedtext') === -1) {
-	            return;
-	          }
-
-	          self.handleSubtitlesLoad(this.response);
-	        };
-	        send.apply(this, arguments);
-	      };
 	    }
 	  }]);
 
@@ -153,6 +167,8 @@
 	exports.triggerEvent = triggerEvent;
 	exports.padWithZero = padWithZero;
 	exports.debounce = debounce;
+	exports.spyOnHttp = spyOnHttp;
+	exports.getParent = getParent;
 
 
 	/**
@@ -245,6 +261,37 @@
 	  };
 	}
 
+	/**
+	 * track http requirest
+	 * @param  {Function} callback
+	 */
+	function spyOnHttp(callback) {
+	  var send = XMLHttpRequest.prototype.send;
+
+	  XMLHttpRequest.prototype.send = function () {
+	    this.onload = function () {
+	      callback(this);
+	    };
+	    send.apply(this, arguments);
+	  };
+	}
+
+	/**
+	 * get parent that mathes filter
+	 * @param  {HTMLElement} $node  startNode
+	 * @param  {Function} filter
+	 * @return {HTMLElement}
+	 */
+	function getParent($node, filter) {
+	  var $currentNode = $node;
+
+	  while (!filter($currentNode) && $currentNode) {
+	    $currentNode = $currentNode.parentNode;
+	  }
+
+	  return $currentNode;
+	}
+
 /***/ },
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
@@ -259,27 +306,58 @@
 
 	var _util = __webpack_require__(2);
 
-	var _MarksView = __webpack_require__(5);
+	var _MarksView = __webpack_require__(4);
 
 	var _MarksView2 = _interopRequireDefault(_MarksView);
 
-	var _constants = __webpack_require__(4);
+	var _constants = __webpack_require__(5);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var SearchEngineView = function () {
-	  function SearchEngineView(searchEngine) {
+	var ControlsView = function () {
+	  function ControlsView(searchEngine) {
 	    var _this = this;
 
-	    _classCallCheck(this, SearchEngineView);
+	    _classCallCheck(this, ControlsView);
+
+	    this.handleKeyDown = function (event) {
+	      // prevent default actions (i.e. fullscreen)
+	      event.stopPropagation();
+	      // close on escape
+	      if (event.keyCode === 27) {
+	        _this.close();
+	        return;
+	      } else {
+	        _this.handleChange();
+	      }
+	    };
+
+	    this.handleChange = function () {
+	      _this.clear();
+	      var query = _this.$input.value;
+	      if (query.length < 3) {
+	        return;
+	      }
+	      var occurrences = _this.searchEngine.search(query);
+	      _this.marksView.renderMarks(occurrences);
+	    };
+
+	    this.open = function () {
+	      _this.opened = true;
+	      _this.render();
+	    };
+
+	    this.close = function () {
+	      _this.opened = false;
+	      _this.$input.value = '';
+	      _this.render();
+	      _this.marksView.removeMarks();
+	    };
 
 	    this.opened = false;
-	    this.open = this.open.bind(this);
-	    this.close = this.close.bind(this);
-	    this.handleChange = (0, _util.debounce)(1000, this.handleChange.bind(this));
-	    this.handleKeyDown = this.handleKeyDown.bind(this);
+	    this.handleChange = (0, _util.debounce)(1000, this.handleChange);
 	    this.searchEngine = searchEngine;
 	    _util.$.on(document, 'DOMContentLoaded', function () {
 	      _this.init();
@@ -287,11 +365,11 @@
 	    });
 	  }
 
-	  _createClass(SearchEngineView, [{
+	  _createClass(ControlsView, [{
 	    key: 'init',
 	    value: function init() {
 	      this.$container = (0, _util.$)(_constants.CONTAINER_CLASS);
-	      this.remplate = __webpack_require__(7);
+	      this.remplate = __webpack_require__(8);
 	      this.marksView = new _MarksView2.default();
 	      this.marksView.loadSubtitles();
 	    }
@@ -301,6 +379,7 @@
 	      if (this.$node) {
 	        this.$container.removeChild(this.$node);
 	      }
+
 	      var tabIndexInput = this.open ? '' : 'tabindex="-1"';
 	      var tabIndexClose = this.open ? 'tabindex="-1"' : '';
 	      this.$node = _util.$.renderFromString(this.remplate, {
@@ -325,76 +404,44 @@
 	      _util.$.on($buttonClose, 'click', this.close);
 	      _util.$.on($input, 'keydown', this.handleKeyDown);
 	    }
-	  }, {
-	    key: 'handleKeyDown',
-	    value: function handleKeyDown(event) {
-	      // prevent default actions (i.e. fullscreen)
-	      event.stopPropagation();
-	      // close on escape
-	      if (event.keyCode === 27) {
-	        this.close();
-	        return;
-	      } else {
-	        this.handleChange(event);
-	      }
-	    }
-	  }, {
-	    key: 'handleChange',
-	    value: function handleChange(event) {
-	      this.clear();
-	      var query = this.$input.value;
-	      if (query.length < 3) {
-	        return;
-	      }
-	      var occurrences = this.searchEngine.search(query);
-	      this.marksView.renderMarks(occurrences);
-	    }
+
+	    /**
+	     * @param  {HTMLEvent} event
+	     */
+
+
+	    /**
+	     */
+
 	  }, {
 	    key: 'clear',
+
+
+	    /**
+	     * remove marks
+	     */
 	    value: function clear() {
 	      this.marksView.removeMarks();
 	    }
-	  }, {
-	    key: 'open',
-	    value: function open() {
-	      this.opened = true;
-	      this.render();
-	    }
-	  }, {
-	    key: 'close',
-	    value: function close() {
-	      this.opened = false;
-	      this.$input.value = '';
-	      this.render();
-	      this.marksView.removeMarks();
-	    }
+
+	    /**
+	     * open controls popup
+	     */
+
+
+	    /**
+	     * close controls popup
+	     */
+
 	  }]);
 
-	  return SearchEngineView;
+	  return ControlsView;
 	}();
 
-	exports.default = SearchEngineView;
+	exports.default = ControlsView;
 
 /***/ },
 /* 4 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var CONTAINER_CLASS = exports.CONTAINER_CLASS = 'ytp-right-controls';
-	var TIMELINE_CLASS = exports.TIMELINE_CLASS = 'ytp-progress-bar-padding';
-	var SUBTITLES_BUTTON_CLASS = exports.SUBTITLES_BUTTON_CLASS = 'ytp-subtitles-button';
-	var DURATION_CLASS = exports.DURATION_CLASS = 'ytp-time-duration';
-	var OPENED_FORM_CLASS = exports.OPENED_FORM_CLASS = 'ms-search-form-opened';
-	var BUTTON_OPEN_CLASS = exports.BUTTON_OPEN_CLASS = 'ms-search-button';
-	var BUTTON_CLOSE_CLASS = exports.BUTTON_CLOSE_CLASS = 'ms-close-button';
-	var INPUT_CLASS = exports.INPUT_CLASS = 'ms-search-input';
-
-/***/ },
-/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -407,35 +454,73 @@
 
 	var _util = __webpack_require__(2);
 
-	var _constants = __webpack_require__(4);
+	var _constants = __webpack_require__(5);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var MarksView = function () {
-	  function MarksView() {
+	  function MarksView(onTimeChange) {
+	    var _this = this;
+
 	    _classCallCheck(this, MarksView);
+
+	    this.clickHandler = function (event) {
+	      var $target = event.target;
+	      var $mark = (0, _util.getParent)($target, function ($node) {
+	        return $node.hasAttribute('data-time');
+	      });
+	      var timeString = $mark.getAttribute('data-time');
+	      var time = Number.parseInt(timeString, 10);
+	      _this.onTimeChange(time);
+	    };
+
+	    this.onTimeChange = onTimeChange;
 
 	    this.$timeline = (0, _util.$)(_constants.TIMELINE_CLASS);
 	    this.$duration = (0, _util.$)(_constants.DURATION_CLASS);
+	    this.$progressBar = (0, _util.$)(_constants.PROGRESS_BAR_CLASS);
 	    this.$subtitlesButton = (0, _util.$)(_constants.SUBTITLES_BUTTON_CLASS);
+	    this.$bottomPane = (0, _util.$)(_constants.BOTTOM_PANE_CLASS);
+	    this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
 	    this.markTemplate = __webpack_require__(6);
+	    this.markContainerTemplate = __webpack_require__(7);
+
+	    this.renderContainer();
 	  }
 
-	  // todo
+	  /**
+	   * get duration in seconds
+	   * @return {number}
+	   */
 
 
 	  _createClass(MarksView, [{
 	    key: 'getDuration',
 	    value: function getDuration() {
-	      var html = this.$duration.innerHTML;
-	      var parts = html.split(':');
-	      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+	      if (!this.duration) {
+	        var stringValue = this.$progressBar.getAttribute('aria-valuemax');
+	        var value = Number.parseInt(stringValue, 10);
+	        this.duration = value;
+	      }
+
+	      return this.duration;
 	    }
+
+	    /**
+	     * get width of one second (in pixels)
+	     * @return {number}
+	     */
+
 	  }, {
 	    key: 'getSecondWidth',
 	    value: function getSecondWidth() {
 	      return this.$timeline.offsetWidth / this.getDuration();
 	    }
+
+	    /**
+	     * @param  {number} time - time in seconds
+	     */
+
 	  }, {
 	    key: 'appendMark',
 	    value: function appendMark(time) {
@@ -445,24 +530,47 @@
 
 	      var $node = _util.$.renderFromString(this.markTemplate, {
 	        time: timeString,
-	        left: left + 'px'
+	        timeValue: time,
+	        left: left
 	      });
 
-	      this.$timeline.appendChild($node);
+	      this.$container.appendChild($node);
+	    }
+
+	    /**
+	     * create container, save ref to the node
+	     */
+
+	  }, {
+	    key: 'renderContainer',
+	    value: function renderContainer() {
+	      var $node = _util.$.renderFromString(this.markContainerTemplate);
+	      this.$container = $node;
+	      _util.$.on(this.$container, 'click', this.clickHandler);
+	      this.$bottomPane.appendChild($node);
 	    }
 	  }, {
 	    key: 'renderMarks',
+
+
+	    /**
+	     * @param  {Array<number>} list
+	     */
 	    value: function renderMarks(list) {
-	      var _this = this;
+	      var _this2 = this;
 
 	      list.forEach(function (time) {
-	        _this.appendMark(time);
+	        _this2.appendMark(time);
 	      });
 	    }
+
+	    /**
+	     */
+
 	  }, {
 	    key: 'removeMarks',
 	    value: function removeMarks() {
-	      this.$timeline.innerHTML = '';
+	      this.$container.innerHTML = '';
 	    }
 	  }, {
 	    key: 'loadSubtitles',
@@ -478,28 +586,56 @@
 	exports.default = MarksView;
 
 /***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var CONTAINER_CLASS = exports.CONTAINER_CLASS = 'ytp-right-controls';
+	var TIMELINE_CLASS = exports.TIMELINE_CLASS = 'ytp-progress-bar-padding';
+	var SUBTITLES_BUTTON_CLASS = exports.SUBTITLES_BUTTON_CLASS = 'ytp-subtitles-button';
+	var DURATION_CLASS = exports.DURATION_CLASS = 'ytp-time-duration';
+	var VIDEO_ELEMENT_CLASS = exports.VIDEO_ELEMENT_CLASS = 'video-stream';
+	var PROGRESS_BAR_CLASS = exports.PROGRESS_BAR_CLASS = 'ytp-progress-bar';
+	var BOTTOM_PANE_CLASS = exports.BOTTOM_PANE_CLASS = 'ytp-chrome-bottom';
+
+	var OPENED_FORM_CLASS = exports.OPENED_FORM_CLASS = 'ms-search-form-opened';
+	var BUTTON_OPEN_CLASS = exports.BUTTON_OPEN_CLASS = 'ms-search-button';
+	var BUTTON_CLOSE_CLASS = exports.BUTTON_CLOSE_CLASS = 'ms-close-button';
+	var INPUT_CLASS = exports.INPUT_CLASS = 'ms-search-input';
+
+/***/ },
 /* 6 */
 /***/ function(module, exports) {
 
-	module.exports = "<span class=\"ms-timeline-mark\" style=\"left: {{left}}\">\n  <span>{{time}}</span>\n</span>\n"
+	module.exports = "<span\n  class=\"ms-timeline-mark\"\n  style=\"left: {{left}}px\"\n  data-time=\"{{timeValue}}\"\n>\n  <span>{{time}}</span>\n</span>\n"
 
 /***/ },
 /* 7 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"ms-search-form {{className}}\">\n  <input\n    type=\"text\"\n    class=\"ms-search-input\"\n    {{tabIndexInput}}\n    placeholder=\"Search...\"\n  >\n  <button class=\"ms-search-button\" {{tabIndexOpen}}>\n    <span>⚲</span>\n  </button>\n  <button class=\"ms-close-button\" {{tabIndexInput}}>\n    <span>⚲</span>\n  </button>\n</div>\n"
+	module.exports = "<div class=\"ms-mark-container\"></div>\n"
 
 /***/ },
 /* 8 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"ms-search-form {{className}}\">\n  <input\n    type=\"text\"\n    class=\"ms-search-input\"\n    {{tabIndexInput}}\n    placeholder=\"Search...\"\n  >\n  <button class=\"ms-search-button\" {{tabIndexOpen}}>\n    <span>⚲</span>\n  </button>\n  <button class=\"ms-close-button\" {{tabIndexInput}}>\n    <span>⚲</span>\n  </button>\n</div>\n"
+
+/***/ },
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(9);
+	var content = __webpack_require__(10);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(11)(content, {});
+	var update = __webpack_require__(12)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -516,21 +652,21 @@
 	}
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(10)();
+	exports = module.exports = __webpack_require__(11)();
 	// imports
 
 
 	// module
-	exports.push([module.id, "\n.ms-timeline-mark {\n  position: absolute;\n  top: -50px;\n  width: 20px;\n  height: 20px;\n  background: #333;\n  border-radius: 3px 3px 0 0;\n  text-align: center;\n  line-height: 20px;\n  display: inline-block;\n  z-index: 1;\n  font-size: 0;\n  margin-left: 15px;\n  border: 1px solid #f2f2f2;\n}\n\n.ms-timeline-mark span {\n  z-index: 1;\n  position: relative;\n}\n\n.ms-timeline-mark:hover {\n  width: 50px;\n  font-size: 11px;\n  border-radius: 3px;\n  margin-left: 0;\n  z-index: 1;\n}\n\n.ytp-chrome-bottom {\n  z-index: 1002 !important;\n}\n\n.ytp-popup {\n  z-index: 1003 !important;\n}\n\n.ytp-chrome-controls {\n  position: relative;\n  z-index: 1 !important;\n}\n\n.ms-timeline-mark:after {\n  content: ' ';\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-style: solid;\n  background-color: #333;\n  width: 14px;\n  height: 14px;\n  left: 50%;\n  bottom: -8px;\n  margin-left: -7px;\n  border: 1px solid #f2f2f2;\n  border-left: none;\n  border-top: none;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n.ms-search-form {\n  display: inline-block;\n  vertical-align: top;\n}\n\n.ms-search-form button {\n  color: #f2f2f2;\n  font-weight: bold;\n  display: inline-block;\n  width: 35px;\n  height: 35px;\n  font-size: 16px;\n  cursor: pointer;\n}\n\n.ms-search-form button span {\n  position: relative;\n  display: inline-block;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n\n.ms-search-form input {\n  background-color: rgba(0, 0, 0, .5);\n  border: 1px solid #777;\n  height: 26px;\n  border-radius: 5px;\n  color: #f2f2f2;\n  font-size: 16px;\n  text-indent: 10px;\n}\n\n.ms-search-form input:focus,\n.ms-search-form button:focus {\n  box-shadow: inset 0 0 0 2px rgba(27, 127, 204, .8);\n}\n.ms-search-form input::-webkit-input-placeholder {\n  color: #777;\n  font-weight: normal;\n  font-style: italic;\n}\n\n.ms-search-form input,\n.ms-search-form .ms-close-button {\n  display: none;\n}\n\n.ms-search-form.ms-search-form-opened input,\n.ms-search-form.ms-search-form-opened .ms-close-button {\n  display: inline-block;\n}\n\n.ms-search-form.ms-search-form-opened .ms-search-button {\n  display: none;\n}\n\n", ""]);
+	exports.push([module.id, "\n.ms-timeline-mark {\n  position: absolute;\n  top: -50px;\n  width: 20px;\n  height: 20px;\n  background: #333;\n  border-radius: 3px 3px 0 0;\n  text-align: center;\n  line-height: 20px;\n  display: inline-block;\n  z-index: 1;\n  font-size: 0;\n  margin-left: 15px;\n  border: 1px solid #f2f2f2;\n  cursor: pointer;\n}\n\n.ms-timeline-mark span {\n  z-index: 1;\n  position: relative;\n}\n\n.ms-timeline-mark:hover {\n  width: 50px;\n  font-size: 11px;\n  border-radius: 3px;\n  margin-left: 0;\n  z-index: 10;\n}\n\n.ytp-chrome-bottom {\n  z-index: 1002 !important;\n}\n\n.ytp-popup {\n  z-index: 1003 !important;\n}\n\n.ytp-chrome-controls {\n  position: relative;\n  z-index: 1 !important;\n}\n\n.ms-timeline-mark:after {\n  content: ' ';\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-style: solid;\n  background-color: #333;\n  width: 14px;\n  height: 14px;\n  left: 50%;\n  bottom: -8px;\n  margin-left: -7px;\n  border: 1px solid #f2f2f2;\n  border-left: none;\n  border-top: none;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n.ms-search-form {\n  display: inline-block;\n  vertical-align: top;\n}\n\n.ms-search-form button {\n  color: #f2f2f2;\n  font-weight: bold;\n  display: inline-block;\n  width: 35px;\n  height: 35px;\n  font-size: 16px;\n  cursor: pointer;\n}\n\n.ms-search-form button span {\n  position: relative;\n  display: inline-block;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n\n.ms-search-form input {\n  background-color: rgba(0, 0, 0, .5);\n  border: 1px solid #777;\n  height: 26px;\n  border-radius: 5px;\n  color: #f2f2f2;\n  font-size: 16px;\n  text-indent: 10px;\n}\n\n.ms-search-form input:focus,\n.ms-search-form button:focus {\n  box-shadow: inset 0 0 0 2px rgba(27, 127, 204, .8);\n}\n.ms-search-form input::-webkit-input-placeholder {\n  color: #777;\n  font-weight: normal;\n  font-style: italic;\n}\n\n.ms-search-form input,\n.ms-search-form .ms-close-button {\n  display: none;\n}\n\n.ms-search-form.ms-search-form-opened input,\n.ms-search-form.ms-search-form-opened .ms-close-button {\n  display: inline-block;\n}\n\n.ms-search-form.ms-search-form-opened .ms-search-button {\n  display: none;\n}\n\n.ms-mark-container {\n  position: absolute;\n  bottom: 50px;\n  width: 100%;\n}\n", ""]);
 
 	// exports
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -585,7 +721,7 @@
 	};
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*

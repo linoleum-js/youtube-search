@@ -1,31 +1,60 @@
 
 import {
-  $, formatTime, triggerEvent
+  $, formatTime, triggerEvent, getParent
 } from './util';
 
 import {
-  DURATION_CLASS, TIMELINE_CLASS, SUBTITLES_BUTTON_CLASS
+  DURATION_CLASS,
+  TIMELINE_CLASS,
+  SUBTITLES_BUTTON_CLASS,
+  PROGRESS_BAR_CLASS,
+  BOTTOM_PANE_CLASS,
+  VIDEO_ELEMENT_CLASS
 } from './constants';
 
 export default class MarksView {
-  constructor() {
+  constructor(onTimeChange) {
+    this.onTimeChange = onTimeChange;
+
     this.$timeline = $(TIMELINE_CLASS);
     this.$duration = $(DURATION_CLASS);
+    this.$progressBar = $(PROGRESS_BAR_CLASS);
     this.$subtitlesButton = $(SUBTITLES_BUTTON_CLASS);
+    this.$bottomPane = $(BOTTOM_PANE_CLASS);
+    this.$videoElement = $(VIDEO_ELEMENT_CLASS);
     this.markTemplate = require('../templates/mark.html');
+    this.markContainerTemplate =
+      require('../templates/mark-container.html');
+
+    this.renderContainer();
   }
 
-  // todo
+  /**
+   * get duration in seconds
+   * @return {number}
+   */
   getDuration() {
-    const html = this.$duration.innerHTML;
-    const parts = html.split(':');
-    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    if (!this.duration) {
+      const stringValue = this.$progressBar
+        .getAttribute('aria-valuemax');
+      const value = Number.parseInt(stringValue, 10);
+      this.duration = value;
+    }
+
+    return this.duration;
   }
 
+  /**
+   * get width of one second (in pixels)
+   * @return {number}
+   */
   getSecondWidth () {
     return this.$timeline.offsetWidth / this.getDuration();
   }
 
+  /**
+   * @param  {number} time - time in seconds
+   */
   appendMark (time) {
     const timeString = formatTime(time);
     const markWidth = 50;
@@ -34,20 +63,46 @@ export default class MarksView {
 
     const $node = $.renderFromString(this.markTemplate, {
       time: timeString,
-      left: left + 'px'
+      timeValue: time,
+      left: left
     });
 
-    this.$timeline.appendChild($node);
+    this.$container.appendChild($node);
   }
 
+  /**
+   * create container, save ref to the node
+   */
+  renderContainer () {
+    const $node = $.renderFromString(this.markContainerTemplate);
+    this.$container = $node;
+    $.on(this.$container, 'click', this.clickHandler);
+    this.$bottomPane.appendChild($node);
+  }
+
+  clickHandler = (event) => {
+    const $target = event.target;
+    const $mark = getParent($target, ($node) => {
+      return $node.hasAttribute('data-time');
+    });
+    const timeString = $mark.getAttribute('data-time');
+    const time = Number.parseInt(timeString, 10);
+    this.onTimeChange(time);
+  }
+
+  /**
+   * @param  {Array<number>} list
+   */
   renderMarks(list) {
     list.forEach((time) => {
       this.appendMark(time);
     });
   }
 
+  /**
+   */
   removeMarks () {
-    this.$timeline.innerHTML = '';
+    this.$container.innerHTML = '';
   }
 
   loadSubtitles() {

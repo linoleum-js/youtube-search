@@ -1,50 +1,57 @@
 
 
-import { $ } from './util';
+import { $, spyOnHttp } from './util';
 
 export default class SearchEngine {
   constructor() {
-    this.spyOnHttp();
+    spyOnHttp(this.spy);
   }
 
-  searchInWords (list, query) {
-    const occurrences = list.filter((item) => {
-      return item.innerHTML.indexOf(query) !== -1;
+  searchInChunks (chunks, query) {
+    const occurrences = chunks.filter((item) => {
+      return item.textContent.includes(query);
     });
     return occurrences;
   }
 
-  getTime (word) {
-    return word.parentNode.getAttribute('t') / 1000;
+  /**
+   * get time offset of specified sentence
+   * @param  {Node} sentence
+   * @return {number} time in seconds
+   */
+  getTime (sentence) {
+    return sentence.getAttribute('t') / 1000;
   }
 
+  /**
+   * init textChunks
+   * @param  {string} response - text that represents subtitles
+   */
   handleSubtitlesLoad (response) {
     const parser = new DOMParser();
     const subtitles = parser.parseFromString(response, 'text/xml');
-    const words = subtitles.getElementsByTagName('s');
-    this.words = [].slice.call(words, 0);
+    const sentences = subtitles.getElementsByTagName('p');
+    console.log(sentences);
+
+    this.textChunks = [].slice.call(sentences, 0);
   }
 
+  /**
+   * @param  {string} query
+   * @return {Array<string>} occurrences
+   */
   search (query) {
-    const result = this.searchInWords(this.words, query);
-    return result.map((word) => {
-      return this.getTime(word);
+    const result = this.searchInChunks(this.textChunks, query);
+    return result.map((sentence) => {
+      return this.getTime(sentence);
     });
   }
 
-  spyOnHttp() {
-    const send = XMLHttpRequest.prototype.send;
-    const self = this;
-
-    XMLHttpRequest.prototype.send = function () {
-      this.onload = function () {
-        if (this.responseURL.indexOf('timedtext') === -1) {
-          return;
-        }
-        
-        self.handleSubtitlesLoad(this.response);
-      };
-      send.apply(this, arguments);
-    };
+  spy = (xhr) => {
+    if (!xhr.responseURL.includes('timedtext')) {
+      return;
+    }
+    
+    this.handleSubtitlesLoad(xhr.response);
   }
 }

@@ -1,10 +1,10 @@
 
 import SearchEngine from './SearchEngine';
-import SearchEngineView from './SearchEngineView';
+import ControlsView from './ControlsView';
 const style = require('../style/style.css');
 
 const searchEngine = new SearchEngine();
-const searchEngineView = new SearchEngineView(searchEngine);
+const searchEngineView = new ControlsView(searchEngine);
 
 
 

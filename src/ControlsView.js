@@ -10,13 +10,10 @@ import {
   CONTAINER_CLASS
 } from './constants';
 
-export default class SearchEngineView {
+export default class ControlsView {
   constructor(searchEngine) {
     this.opened = false;
-    this.open = this.open.bind(this);
-    this.close = this.close.bind(this);
-    this.handleChange = debounce(1000, this.handleChange.bind(this));
-    this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.handleChange = debounce(1000, this.handleChange);
     this.searchEngine = searchEngine;
     $.on(document, 'DOMContentLoaded', () => {
       this.init();
@@ -35,12 +32,13 @@ export default class SearchEngineView {
     if (this.$node) {
       this.$container.removeChild(this.$node);
     }
+
     const tabIndexInput = this.open ?
       '' : 'tabindex="-1"';
     const tabIndexClose = this.open ?
       'tabindex="-1"' : '';
     this.$node = $.renderFromString(this.remplate, {
-      className: this.opened ? OPENED_FORM_CLASS: '',
+      className: this.opened ? OPENED_FORM_CLASS : '',
       tabIndexInput: tabIndexInput,
       tabIndexClose: tabIndexClose
     });
@@ -63,7 +61,10 @@ export default class SearchEngineView {
     $.on($input, 'keydown', this.handleKeyDown);
   }
 
-  handleKeyDown(event) {
+  /**
+   * @param  {HTMLEvent} event
+   */
+  handleKeyDown = (event) => {
     // prevent default actions (i.e. fullscreen)
     event.stopPropagation();
     // close on escape
@@ -71,11 +72,13 @@ export default class SearchEngineView {
       this.close();
       return;
     } else {
-      this.handleChange(event);
+      this.handleChange();
     }
   }
 
-  handleChange(event) {
+  /**
+   */
+  handleChange = () => {
     this.clear();
     const query = this.$input.value;
     if (query.length < 3) { return; }
@@ -83,16 +86,25 @@ export default class SearchEngineView {
     this.marksView.renderMarks(occurrences);
   }
 
+  /**
+   * remove marks
+   */
   clear() {
     this.marksView.removeMarks();
   }
 
-  open() {
+  /**
+   * open controls popup
+   */
+  open = () => {
     this.opened = true;
     this.render();
   }
 
-  close() {
+  /**
+   * close controls popup
+   */
+  close = () => {
     this.opened = false;
     this.$input.value = '';
     this.render();

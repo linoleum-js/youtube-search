@@ -86,3 +86,34 @@ export function debounce(delay, callback) {
     });
   };
 }
+
+/**
+ * track http requirest
+ * @param  {Function} callback
+ */
+export function spyOnHttp (callback) {
+  const send = XMLHttpRequest.prototype.send;
+
+  XMLHttpRequest.prototype.send = function () {
+    this.onload = function () {
+      callback(this);
+    };
+    send.apply(this, arguments);
+  };  
+}
+
+/**
+ * get parent that mathes filter
+ * @param  {HTMLElement} $node  startNode
+ * @param  {Function} filter
+ * @return {HTMLElement}
+ */
+export function getParent ($node, filter) {
+  let $currentNode = $node;
+
+  while (!filter($currentNode) && $currentNode) {
+    $currentNode = $currentNode.parentNode;
+  }
+
+  return $currentNode;
+}
