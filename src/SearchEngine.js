@@ -1,14 +1,29 @@
 
 
-import { $, spyOnHttp } from './util';
+import { spyOnHttp } from './util';
 
 export default class SearchEngine {
   constructor() {
     spyOnHttp(this.spy);
   }
 
-  searchInChunks (chunks, query) {
+  searchInChunks1 (chunks, query) {
     const occurrences = chunks.filter((item) => {
+      return item.textContent.includes(query);
+    });
+    return occurrences;
+  }
+
+  /**
+   * fuzzy search
+   * 
+   * @param  {Array<Node>} chunks
+   * @param  {string} query
+   * @param  {boolean} entireWord
+   * @return {Array}
+   */
+  searchInChunks (chunks, query, entireWord) {
+    const occurrences = chunks.filter((item, index) => {
       return item.textContent.includes(query);
     });
     return occurrences;
@@ -31,9 +46,8 @@ export default class SearchEngine {
     const parser = new DOMParser();
     const subtitles = parser.parseFromString(response, 'text/xml');
     const sentences = subtitles.getElementsByTagName('p');
-    console.log(sentences);
 
-    this.textChunks = [].slice.call(sentences, 0);
+    this.textChunks = sentences::[].slice(0);
   }
 
   /**
@@ -42,9 +56,7 @@ export default class SearchEngine {
    */
   search (query) {
     const result = this.searchInChunks(this.textChunks, query);
-    return result.map((sentence) => {
-      return this.getTime(sentence);
-    });
+    return result.map(sentence => this.getTime(sentence));
   }
 
   spy = (xhr) => {

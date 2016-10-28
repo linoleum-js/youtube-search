@@ -8,7 +8,7 @@
     "scripts": ["background.js"]
   },
   "content_scripts": [{
-    "matches": ["*://*/*"],
+    "matches": ["*://*.youtube.com/*"],
     "js":      ["content.js"],
     "run_at":    "document_start"
   }],

@@ -8,20 +8,18 @@ import {
   TIMELINE_CLASS,
   SUBTITLES_BUTTON_CLASS,
   PROGRESS_BAR_CLASS,
-  BOTTOM_PANE_CLASS,
-  VIDEO_ELEMENT_CLASS
+  BOTTOM_PANE_CLASS
 } from './constants';
 
 export default class MarksView {
-  constructor(onTimeChange) {
-    this.onTimeChange = onTimeChange;
+  constructor(props) {
+    this.onTimeChange = props.onTimeChange;
 
     this.$timeline = $(TIMELINE_CLASS);
     this.$duration = $(DURATION_CLASS);
     this.$progressBar = $(PROGRESS_BAR_CLASS);
     this.$subtitlesButton = $(SUBTITLES_BUTTON_CLASS);
     this.$bottomPane = $(BOTTOM_PANE_CLASS);
-    this.$videoElement = $(VIDEO_ELEMENT_CLASS);
     this.markTemplate = require('../templates/mark.html');
     this.markContainerTemplate =
       require('../templates/mark-container.html');

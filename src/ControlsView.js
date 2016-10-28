@@ -7,7 +7,8 @@ import {
   BUTTON_OPEN_CLASS,
   BUTTON_CLOSE_CLASS,
   INPUT_CLASS,
-  CONTAINER_CLASS
+  CONTAINER_CLASS,
+  VIDEO_ELEMENT_CLASS
 } from './constants';
 
 export default class ControlsView {
@@ -23,9 +24,19 @@ export default class ControlsView {
 
   init() {
     this.$container = $(CONTAINER_CLASS);
+    this.$videoElement = $(VIDEO_ELEMENT_CLASS);
     this.remplate = require('../templates/search-form.html');
-    this.marksView = new MarksView();
+    this.marksView = new MarksView({
+      onTimeChange: this.gotoTime
+    });
     this.marksView.loadSubtitles();
+  }
+
+  /**
+   * @param  {number} time
+   */
+  gotoTime = (time) => {
+    this.$videoElement.currentTime = time - 1;
   }
 
   render() {

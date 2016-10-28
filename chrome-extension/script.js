@@ -95,9 +95,27 @@
 	  }
 
 	  _createClass(SearchEngine, [{
-	    key: 'searchInChunks',
-	    value: function searchInChunks(chunks, query) {
+	    key: 'searchInChunks1',
+	    value: function searchInChunks1(chunks, query) {
 	      var occurrences = chunks.filter(function (item) {
+	        return item.textContent.includes(query);
+	      });
+	      return occurrences;
+	    }
+
+	    /**
+	     * fuzzy search
+	     * 
+	     * @param  {Array<Node>} chunks
+	     * @param  {string} query
+	     * @param  {boolean} entireWord
+	     * @return {Array}
+	     */
+
+	  }, {
+	    key: 'searchInChunks',
+	    value: function searchInChunks(chunks, query, entireWord) {
+	      var occurrences = chunks.filter(function (item, index) {
 	        return item.textContent.includes(query);
 	      });
 	      return occurrences;
@@ -126,7 +144,6 @@
 	      var parser = new DOMParser();
 	      var subtitles = parser.parseFromString(response, 'text/xml');
 	      var sentences = subtitles.getElementsByTagName('p');
-	      console.log(sentences);
 
 	      this.textChunks = [].slice.call(sentences, 0);
 	    }
@@ -322,6 +339,10 @@
 
 	    _classCallCheck(this, ControlsView);
 
+	    this.gotoTime = function (time) {
+	      _this.$videoElement.currentTime = time - 1;
+	    };
+
 	    this.handleKeyDown = function (event) {
 	      // prevent default actions (i.e. fullscreen)
 	      event.stopPropagation();
@@ -369,10 +390,18 @@
 	    key: 'init',
 	    value: function init() {
 	      this.$container = (0, _util.$)(_constants.CONTAINER_CLASS);
+	      this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
 	      this.remplate = __webpack_require__(8);
-	      this.marksView = new _MarksView2.default();
+	      this.marksView = new _MarksView2.default({
+	        onTimeChange: this.gotoTime
+	      });
 	      this.marksView.loadSubtitles();
 	    }
+
+	    /**
+	     * @param  {number} time
+	     */
+
 	  }, {
 	    key: 'render',
 	    value: function render() {
@@ -459,7 +488,7 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var MarksView = function () {
-	  function MarksView(onTimeChange) {
+	  function MarksView(props) {
 	    var _this = this;
 
 	    _classCallCheck(this, MarksView);
@@ -474,14 +503,13 @@
 	      _this.onTimeChange(time);
 	    };
 
-	    this.onTimeChange = onTimeChange;
+	    this.onTimeChange = props.onTimeChange;
 
 	    this.$timeline = (0, _util.$)(_constants.TIMELINE_CLASS);
 	    this.$duration = (0, _util.$)(_constants.DURATION_CLASS);
 	    this.$progressBar = (0, _util.$)(_constants.PROGRESS_BAR_CLASS);
 	    this.$subtitlesButton = (0, _util.$)(_constants.SUBTITLES_BUTTON_CLASS);
 	    this.$bottomPane = (0, _util.$)(_constants.BOTTOM_PANE_CLASS);
-	    this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
 	    this.markTemplate = __webpack_require__(6);
 	    this.markContainerTemplate = __webpack_require__(7);
 
@@ -660,7 +688,7 @@
 
 
 	// module
-	exports.push([module.id, "\n.ms-timeline-mark {\n  position: absolute;\n  top: -50px;\n  width: 20px;\n  height: 20px;\n  background: #333;\n  border-radius: 3px 3px 0 0;\n  text-align: center;\n  line-height: 20px;\n  display: inline-block;\n  z-index: 1;\n  font-size: 0;\n  margin-left: 15px;\n  border: 1px solid #f2f2f2;\n  cursor: pointer;\n}\n\n.ms-timeline-mark span {\n  z-index: 1;\n  position: relative;\n}\n\n.ms-timeline-mark:hover {\n  width: 50px;\n  font-size: 11px;\n  border-radius: 3px;\n  margin-left: 0;\n  z-index: 10;\n}\n\n.ytp-chrome-bottom {\n  z-index: 1002 !important;\n}\n\n.ytp-popup {\n  z-index: 1003 !important;\n}\n\n.ytp-chrome-controls {\n  position: relative;\n  z-index: 1 !important;\n}\n\n.ms-timeline-mark:after {\n  content: ' ';\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-style: solid;\n  background-color: #333;\n  width: 14px;\n  height: 14px;\n  left: 50%;\n  bottom: -8px;\n  margin-left: -7px;\n  border: 1px solid #f2f2f2;\n  border-left: none;\n  border-top: none;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n.ms-search-form {\n  display: inline-block;\n  vertical-align: top;\n}\n\n.ms-search-form button {\n  color: #f2f2f2;\n  font-weight: bold;\n  display: inline-block;\n  width: 35px;\n  height: 35px;\n  font-size: 16px;\n  cursor: pointer;\n}\n\n.ms-search-form button span {\n  position: relative;\n  display: inline-block;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n\n.ms-search-form input {\n  background-color: rgba(0, 0, 0, .5);\n  border: 1px solid #777;\n  height: 26px;\n  border-radius: 5px;\n  color: #f2f2f2;\n  font-size: 16px;\n  text-indent: 10px;\n}\n\n.ms-search-form input:focus,\n.ms-search-form button:focus {\n  box-shadow: inset 0 0 0 2px rgba(27, 127, 204, .8);\n}\n.ms-search-form input::-webkit-input-placeholder {\n  color: #777;\n  font-weight: normal;\n  font-style: italic;\n}\n\n.ms-search-form input,\n.ms-search-form .ms-close-button {\n  display: none;\n}\n\n.ms-search-form.ms-search-form-opened input,\n.ms-search-form.ms-search-form-opened .ms-close-button {\n  display: inline-block;\n}\n\n.ms-search-form.ms-search-form-opened .ms-search-button {\n  display: none;\n}\n\n.ms-mark-container {\n  position: absolute;\n  bottom: 50px;\n  width: 100%;\n}\n", ""]);
+	exports.push([module.id, "\n.ms-timeline-mark {\n  position: absolute;\n  top: -50px;\n  width: 20px;\n  height: 20px;\n  background: #333;\n  border-radius: 3px 3px 0 0;\n  text-align: center;\n  line-height: 20px;\n  display: inline-block;\n  z-index: 1;\n  font-size: 0;\n  margin-left: 15px;\n  border: 1px solid #f2f2f2;\n  cursor: pointer;\n}\n\n.ms-timeline-mark span {\n  z-index: 1;\n  position: relative;\n}\n\n.ms-timeline-mark:hover {\n  width: 50px;\n  font-size: 11px;\n  border-radius: 3px;\n  margin-left: 0;\n  z-index: 10;\n}\n\n.ytp-chrome-bottom {\n  z-index: 1002 !important;\n}\n\n.ytp-popup {\n  z-index: 1003 !important;\n}\n\n.ytp-chrome-controls {\n  position: relative;\n  z-index: 1 !important;\n}\n\n.ms-timeline-mark:after {\n  content: ' ';\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-style: solid;\n  background-color: #333;\n  width: 14px;\n  height: 14px;\n  left: 50%;\n  bottom: -8px;\n  margin-left: -7px;\n  border: 1px solid #f2f2f2;\n  border-left: none;\n  border-top: none;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n.ms-search-form {\n  display: inline-block;\n  vertical-align: top;\n}\n\n.ms-search-form button {\n  color: #f2f2f2;\n  font-weight: bold;\n  display: inline-block;\n  width: 35px;\n  height: 35px;\n  font-size: 16px;\n  cursor: pointer;\n}\n\n.ms-search-form button span {\n  position: relative;\n  display: inline-block;\n  transform: rotate(45deg);\n  -webkit-transform: rotate(45deg);\n}\n\n\n.ms-search-form input {\n  background-color: rgba(0, 0, 0, .5);\n  border: 1px solid #777;\n  height: 26px;\n  border-radius: 5px;\n  color: #f2f2f2;\n  font-size: 16px;\n  text-indent: 10px;\n}\n\n.ms-search-form input:focus,\n.ms-search-form button:focus {\n  box-shadow: inset 0 0 0 2px rgba(27, 127, 204, .8);\n}\n.ms-search-form input::-webkit-input-placeholder {\n  color: #777;\n  font-weight: normal;\n  font-style: italic;\n}\n\n.ms-search-form input,\n.ms-search-form .ms-close-button {\n  display: none;\n}\n\n.ms-search-form.ms-search-form-opened input,\n.ms-search-form.ms-search-form-opened .ms-close-button {\n  display: inline-block;\n}\n\n.ms-search-form.ms-search-form-opened .ms-search-button {\n  display: none;\n}\n\n.ms-mark-container {\n  position: absolute;\n  bottom: 30px;\n  width: 100%;\n}\n", ""]);
 
 	// exports
 

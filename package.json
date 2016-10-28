@@ -1,12 +1,21 @@
 {
-  "name": "youtube search",
+  "name": "youtube-search",
   "version": "0.0.1",
+  "scripts": {
+    "build-test": "webpack --config webpack-test.config.js --watch",
+    "postinstall": "webpack",
+    "test": "npm run build-test & jasmine"
+  },
   "devDependencies": {
     "babel-core": "^6.17.0",
     "babel-loader": "^6.2.5",
     "babel-preset-es2015": "^6.16.0",
     "babel-preset-stage-0": "^6.16.0",
     "css-loader": "^0.25.0",
+    "jasmine": "^2.5.2",
+    "karma": "^1.3.0",
+    "karma-chrome-launcher": "^2.0.0",
+    "karma-jasmine": "^1.0.2",
     "style-loader": "^0.13.1",
     "text-loader": "0.0.1",
     "webpack": "^1.13.2"
