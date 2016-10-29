@@ -18,7 +18,6 @@ export default class MarksView {
     this.$timeline = $(TIMELINE_CLASS);
     this.$duration = $(DURATION_CLASS);
     this.$progressBar = $(PROGRESS_BAR_CLASS);
-    this.$subtitlesButton = $(SUBTITLES_BUTTON_CLASS);
     this.$bottomPane = $(BOTTOM_PANE_CLASS);
     this.markTemplate = require('../templates/mark.html');
     this.markContainerTemplate =
@@ -89,22 +88,24 @@ export default class MarksView {
   }
 
   /**
-   * @param  {Array<number>} list
+   * @param  {Array<Object>} list
    */
-  renderMarks(list) {
-    list.forEach((time) => {
-      this.appendMark(time);
+  render(list) {
+    list.forEach((item) => {
+      this.appendMark(item.time);
     });
   }
 
   /**
    */
-  removeMarks () {
+  clear () {
     this.$container.innerHTML = '';
   }
 
-  loadSubtitles() {
-    // load subtitles. wut, wut, wut...
-    this.$subtitlesButton.click();
+  remove() {
+    this.$container.parentNode.removeChild(
+      this.$container
+    );
+    this.$container = null;
   }
 }

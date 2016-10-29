@@ -3,10 +3,6 @@
 import { spyOnHttp } from './util';
 
 export default class SearchEngine {
-  constructor() {
-    spyOnHttp(this.spy);
-  }
-
   searchInChunks1 (chunks, query) {
     const occurrences = chunks.filter((item) => {
       return item.textContent.includes(query);
@@ -40,11 +36,11 @@ export default class SearchEngine {
 
   /**
    * init textChunks
-   * @param  {string} response - text that represents subtitles
+   * @param  {string} text - text that represents subtitles
    */
-  handleSubtitlesLoad (response) {
+  setData (text) {
     const parser = new DOMParser();
-    const subtitles = parser.parseFromString(response, 'text/xml');
+    const subtitles = parser.parseFromString(text, 'text/xml');
     const sentences = subtitles.getElementsByTagName('p');
 
     this.textChunks = sentences::[].slice(0);
@@ -56,14 +52,10 @@ export default class SearchEngine {
    */
   search (query) {
     const result = this.searchInChunks(this.textChunks, query);
-    return result.map(sentence => this.getTime(sentence));
-  }
-
-  spy = (xhr) => {
-    if (!xhr.responseURL.includes('timedtext')) {
-      return;
-    }
-    
-    this.handleSubtitlesLoad(xhr.response);
+    return result.map((sentence) => {
+      return {
+        time: this.getTime(sentence)
+      }
+    });
   }
 }

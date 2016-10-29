@@ -46,20 +46,14 @@
 
 	'use strict';
 
-	var _SearchEngine = __webpack_require__(1);
+	var _App = __webpack_require__(14);
 
-	var _SearchEngine2 = _interopRequireDefault(_SearchEngine);
-
-	var _ControlsView = __webpack_require__(3);
-
-	var _ControlsView2 = _interopRequireDefault(_ControlsView);
+	var _App2 = _interopRequireDefault(_App);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var style = __webpack_require__(9);
-
-	var searchEngine = new _SearchEngine2.default();
-	var searchEngineView = new _ControlsView2.default(searchEngine);
+	var style = __webpack_require__(10);
+	var app = new _App2.default();
 
 /***/ },
 /* 1 */
@@ -79,19 +73,7 @@
 
 	var SearchEngine = function () {
 	  function SearchEngine() {
-	    var _this = this;
-
 	    _classCallCheck(this, SearchEngine);
-
-	    this.spy = function (xhr) {
-	      if (!xhr.responseURL.includes('timedtext')) {
-	        return;
-	      }
-
-	      _this.handleSubtitlesLoad(xhr.response);
-	    };
-
-	    (0, _util.spyOnHttp)(this.spy);
 	  }
 
 	  _createClass(SearchEngine, [{
@@ -135,14 +117,14 @@
 
 	    /**
 	     * init textChunks
-	     * @param  {string} response - text that represents subtitles
+	     * @param  {string} text - text that represents subtitles
 	     */
 
 	  }, {
-	    key: 'handleSubtitlesLoad',
-	    value: function handleSubtitlesLoad(response) {
+	    key: 'setData',
+	    value: function setData(text) {
 	      var parser = new DOMParser();
-	      var subtitles = parser.parseFromString(response, 'text/xml');
+	      var subtitles = parser.parseFromString(text, 'text/xml');
 	      var sentences = subtitles.getElementsByTagName('p');
 
 	      this.textChunks = [].slice.call(sentences, 0);
@@ -156,11 +138,13 @@
 	  }, {
 	    key: 'search',
 	    value: function search(query) {
-	      var _this2 = this;
+	      var _this = this;
 
 	      var result = this.searchInChunks(this.textChunks, query);
 	      return result.map(function (sentence) {
-	        return _this2.getTime(sentence);
+	        return {
+	          time: _this.getTime(sentence)
+	        };
 	      });
 	    }
 	  }]);
@@ -323,18 +307,12 @@
 
 	var _util = __webpack_require__(2);
 
-	var _MarksView = __webpack_require__(4);
-
-	var _MarksView2 = _interopRequireDefault(_MarksView);
-
 	var _constants = __webpack_require__(5);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var ControlsView = function () {
-	  function ControlsView(searchEngine) {
+	  function ControlsView(props) {
 	    var _this = this;
 
 	    _classCallCheck(this, ControlsView);
@@ -356,13 +334,8 @@
 	    };
 
 	    this.handleChange = function () {
-	      _this.clear();
 	      var query = _this.$input.value;
-	      if (query.length < 3) {
-	        return;
-	      }
-	      var occurrences = _this.searchEngine.search(query);
-	      _this.marksView.renderMarks(occurrences);
+	      _this.props.onSeachQueryChange(query);
 	    };
 
 	    this.open = function () {
@@ -374,16 +347,14 @@
 	      _this.opened = false;
 	      _this.$input.value = '';
 	      _this.render();
-	      _this.marksView.removeMarks();
+	      _this.props.onClose();
 	    };
 
 	    this.opened = false;
 	    this.handleChange = (0, _util.debounce)(1000, this.handleChange);
-	    this.searchEngine = searchEngine;
-	    _util.$.on(document, 'DOMContentLoaded', function () {
-	      _this.init();
-	      _this.render();
-	    });
+	    this.props = props;
+	    this.init();
+	    this.render();
 	  }
 
 	  _createClass(ControlsView, [{
@@ -392,10 +363,6 @@
 	      this.$container = (0, _util.$)(_constants.CONTAINER_CLASS);
 	      this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
 	      this.remplate = __webpack_require__(8);
-	      this.marksView = new _MarksView2.default({
-	        onTimeChange: this.gotoTime
-	      });
-	      this.marksView.loadSubtitles();
 	    }
 
 	    /**
@@ -442,16 +409,6 @@
 	    /**
 	     */
 
-	  }, {
-	    key: 'clear',
-
-
-	    /**
-	     * remove marks
-	     */
-	    value: function clear() {
-	      this.marksView.removeMarks();
-	    }
 
 	    /**
 	     * open controls popup
@@ -462,6 +419,12 @@
 	     * close controls popup
 	     */
 
+	  }, {
+	    key: 'remove',
+	    value: function remove() {
+	      this.$container.removeChild(this.$node);
+	      this.$node = null;
+	    }
 	  }]);
 
 	  return ControlsView;
@@ -508,7 +471,6 @@
 	    this.$timeline = (0, _util.$)(_constants.TIMELINE_CLASS);
 	    this.$duration = (0, _util.$)(_constants.DURATION_CLASS);
 	    this.$progressBar = (0, _util.$)(_constants.PROGRESS_BAR_CLASS);
-	    this.$subtitlesButton = (0, _util.$)(_constants.SUBTITLES_BUTTON_CLASS);
 	    this.$bottomPane = (0, _util.$)(_constants.BOTTOM_PANE_CLASS);
 	    this.markTemplate = __webpack_require__(6);
 	    this.markContainerTemplate = __webpack_require__(7);
@@ -578,17 +540,17 @@
 	      this.$bottomPane.appendChild($node);
 	    }
 	  }, {
-	    key: 'renderMarks',
+	    key: 'render',
 
 
 	    /**
-	     * @param  {Array<number>} list
+	     * @param  {Array<Object>} list
 	     */
-	    value: function renderMarks(list) {
+	    value: function render(list) {
 	      var _this2 = this;
 
-	      list.forEach(function (time) {
-	        _this2.appendMark(time);
+	      list.forEach(function (item) {
+	        _this2.appendMark(item.time);
 	      });
 	    }
 
@@ -596,15 +558,15 @@
 	     */
 
 	  }, {
-	    key: 'removeMarks',
-	    value: function removeMarks() {
+	    key: 'clear',
+	    value: function clear() {
 	      this.$container.innerHTML = '';
 	    }
 	  }, {
-	    key: 'loadSubtitles',
-	    value: function loadSubtitles() {
-	      // load subtitles. wut, wut, wut...
-	      this.$subtitlesButton.click();
+	    key: 'remove',
+	    value: function remove() {
+	      this.$container.parentNode.removeChild(this.$container);
+	      this.$container = null;
 	    }
 	  }]);
 
@@ -654,16 +616,17 @@
 	module.exports = "<div class=\"ms-search-form {{className}}\">\n  <input\n    type=\"text\"\n    class=\"ms-search-input\"\n    {{tabIndexInput}}\n    placeholder=\"Search...\"\n  >\n  <button class=\"ms-search-button\" {{tabIndexOpen}}>\n    <span>⚲</span>\n  </button>\n  <button class=\"ms-close-button\" {{tabIndexInput}}>\n    <span>⚲</span>\n  </button>\n</div>\n"
 
 /***/ },
-/* 9 */
+/* 9 */,
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(10);
+	var content = __webpack_require__(11);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(12)(content, {});
+	var update = __webpack_require__(13)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -680,10 +643,10 @@
 	}
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(11)();
+	exports = module.exports = __webpack_require__(12)();
 	// imports
 
 
@@ -694,7 +657,7 @@
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -749,7 +712,7 @@
 	};
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -999,6 +962,125 @@
 			URL.revokeObjectURL(oldSrc);
 	}
 
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _util = __webpack_require__(2);
+
+	var _SearchEngine = __webpack_require__(1);
+
+	var _SearchEngine2 = _interopRequireDefault(_SearchEngine);
+
+	var _ControlsView = __webpack_require__(3);
+
+	var _ControlsView2 = _interopRequireDefault(_ControlsView);
+
+	var _MarksView = __webpack_require__(4);
+
+	var _MarksView2 = _interopRequireDefault(_MarksView);
+
+	var _constants = __webpack_require__(5);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Controller = function () {
+	  function Controller() {
+	    var _this = this;
+
+	    _classCallCheck(this, Controller);
+
+	    this.init = function () {
+	      _this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
+	      _this.$subtitlesButton = (0, _util.$)(_constants.SUBTITLES_BUTTON_CLASS);
+	      _this.loadSubtitles();
+	      _this.createViews();
+	    };
+
+	    this.createViews = function () {
+	      _this.resultView = new _MarksView2.default({
+	        onTimeChange: _this.gotoTime
+	      });
+	      _this.controlsView = new _ControlsView2.default({
+	        onSeachQueryChange: _this.onSeachQueryChange,
+	        onClose: _this.clear
+	      });
+	    };
+
+	    this.onSeachQueryChange = function (query) {
+	      _this.clear();
+	      if (query.length < 3) {
+	        return;
+	      }
+	      var occurrences = _this.searchEngine.search(query);
+	      _this.resultView.render(occurrences);
+	    };
+
+	    this.clear = function () {
+	      _this.resultView.clear();
+	    };
+
+	    this.gotoTime = function (time) {
+	      _this.$videoElement.currentTime = time - 1;
+	    };
+
+	    this.changeView = function (viewName) {
+	      _this.resultView.remove();
+	    };
+
+	    this.httpSpy = function (xhr) {
+	      if (!xhr.responseURL.includes('timedtext')) {
+	        return;
+	      }
+
+	      _this.handleSubtitlesLoad(xhr.response);
+	    };
+
+	    this.loadSubtitles = function () {
+	      setTimeout(function () {
+	        (0, _util.triggerEvent)(_this.$subtitlesButton, 'click');
+	        (0, _util.triggerEvent)(_this.$subtitlesButton, 'click');
+	      }, 1000);
+	    };
+
+	    (0, _util.spyOnHttp)(this.httpSpy);
+	    this.searchEngine = new _SearchEngine2.default();
+	    _util.$.on(document, 'DOMContentLoaded', this.init);
+	  }
+
+	  /**
+	   * @param  {number} time
+	   */
+
+
+	  _createClass(Controller, [{
+	    key: 'handleSubtitlesLoad',
+
+
+	    /**
+	     * @param  {string} response - text that represents subtitles
+	     */
+	    value: function handleSubtitlesLoad(response) {
+	      this.clear();
+	      this.searchEngine.setData(response);
+	    }
+	  }]);
+
+	  return Controller;
+	}();
+
+	exports.default = Controller;
 
 /***/ }
 /******/ ]);

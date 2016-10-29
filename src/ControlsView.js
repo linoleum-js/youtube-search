@@ -1,7 +1,6 @@
 
 
 import { $, debounce } from './util';
-import MarksView from './MarksView';
 import {
   OPENED_FORM_CLASS,
   BUTTON_OPEN_CLASS,
@@ -12,24 +11,18 @@ import {
 } from './constants';
 
 export default class ControlsView {
-  constructor(searchEngine) {
+  constructor(props) {
     this.opened = false;
     this.handleChange = debounce(1000, this.handleChange);
-    this.searchEngine = searchEngine;
-    $.on(document, 'DOMContentLoaded', () => {
-      this.init();
-      this.render();
-    });
+    this.props = props;
+    this.init();
+    this.render();
   }
 
   init() {
     this.$container = $(CONTAINER_CLASS);
     this.$videoElement = $(VIDEO_ELEMENT_CLASS);
     this.remplate = require('../templates/search-form.html');
-    this.marksView = new MarksView({
-      onTimeChange: this.gotoTime
-    });
-    this.marksView.loadSubtitles();
   }
 
   /**
@@ -90,18 +83,8 @@ export default class ControlsView {
   /**
    */
   handleChange = () => {
-    this.clear();
     const query = this.$input.value;
-    if (query.length < 3) { return; }
-    const occurrences = this.searchEngine.search(query);
-    this.marksView.renderMarks(occurrences);
-  }
-
-  /**
-   * remove marks
-   */
-  clear() {
-    this.marksView.removeMarks();
+    this.props.onSeachQueryChange(query);
   }
 
   /**
@@ -119,6 +102,13 @@ export default class ControlsView {
     this.opened = false;
     this.$input.value = '';
     this.render();
-    this.marksView.removeMarks();
+    this.props.onClose();
+  }
+
+  remove() {
+    this.$container.removeChild(
+      this.$node
+    );
+    this.$node = null;
   }
 }
