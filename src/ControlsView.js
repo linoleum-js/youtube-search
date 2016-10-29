@@ -25,13 +25,6 @@ export default class ControlsView {
     this.remplate = require('../templates/search-form.html');
   }
 
-  /**
-   * @param  {number} time
-   */
-  gotoTime = (time) => {
-    this.$videoElement.currentTime = time - 1;
-  }
-
   render() {
     if (this.$node) {
       this.$container.removeChild(this.$node);
@@ -66,10 +59,10 @@ export default class ControlsView {
   }
 
   /**
-   * @param  {HTMLEvent} event
+   * @param  {Event} event
    */
   handleKeyDown = (event) => {
-    // prevent default actions (i.e. fullscreen)
+    // prevent default actions (i.e. full screen)
     event.stopPropagation();
     // close on escape
     if (event.keyCode === 27) {
@@ -84,7 +77,7 @@ export default class ControlsView {
    */
   handleChange = () => {
     const query = this.$input.value;
-    this.props.onSeachQueryChange(query);
+    this.props.onSearchQueryChange(query);
   }
 
   /**

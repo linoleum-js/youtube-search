@@ -46,7 +46,7 @@
 
 	'use strict';
 
-	var _App = __webpack_require__(14);
+	var _App = __webpack_require__(1);
 
 	var _App2 = _interopRequireDefault(_App);
 
@@ -69,90 +69,117 @@
 
 	var _util = __webpack_require__(2);
 
+	var _SearchEngine = __webpack_require__(3);
+
+	var _SearchEngine2 = _interopRequireDefault(_SearchEngine);
+
+	var _ControlsView = __webpack_require__(4);
+
+	var _ControlsView2 = _interopRequireDefault(_ControlsView);
+
+	var _MarksView = __webpack_require__(7);
+
+	var _MarksView2 = _interopRequireDefault(_MarksView);
+
+	var _constants = __webpack_require__(5);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var SearchEngine = function () {
-	  function SearchEngine() {
-	    _classCallCheck(this, SearchEngine);
+	var App = function () {
+	  function App() {
+	    var _this = this;
+
+	    _classCallCheck(this, App);
+
+	    this.init = function () {
+	      _this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
+	      _this.$subtitlesButton = (0, _util.$)(_constants.SUBTITLES_BUTTON_CLASS);
+	      _this.loadSubtitles();
+	      _this.createViews();
+	    };
+
+	    this.createViews = function () {
+	      _this.resultView = new _MarksView2.default({
+	        onTimeChange: _this.goToTime
+	      });
+	      _this.controlsView = new _ControlsView2.default({
+	        onSearchQueryChange: _this.onSearchQueryChange,
+	        onClose: _this.clear
+	      });
+	    };
+
+	    this.onSearchQueryChange = function (query) {
+	      _this.clear();
+	      if (query.length < 3) {
+	        return;
+	      }
+	      var occurrences = _this.searchEngine.search(query);
+	      _this.resultView.render(occurrences);
+	    };
+
+	    this.clear = function () {
+	      _this.resultView.clear();
+	    };
+
+	    this.goToTime = function (time) {
+	      _this.$videoElement.currentTime = time - 1;
+	    };
+
+	    this.changeView = function (viewName) {
+	      _this.resultView.remove();
+	    };
+
+	    this.httpSpy = function (xhr) {
+	      if (!xhr.responseURL.includes('timedtext')) {
+	        return;
+	      }
+
+	      console.log(xhr);
+
+	      _this.handleSubtitlesLoad(xhr.responseText);
+	    };
+
+	    this.loadSubtitles = function () {
+	      setTimeout(function () {
+	        (0, _util.triggerEvent)(_this.$subtitlesButton, 'click');
+	        (0, _util.triggerEvent)(_this.$subtitlesButton, 'click');
+	      }, 1000);
+	    };
+
+	    (0, _util.spyOnHttp)(this.httpSpy);
+	    this.searchEngine = new _SearchEngine2.default();
+	    _util.$.on(document, 'DOMContentLoaded', this.init);
 	  }
 
-	  _createClass(SearchEngine, [{
-	    key: 'searchInChunks1',
-	    value: function searchInChunks1(chunks, query) {
-	      var occurrences = chunks.filter(function (item) {
-	        return item.textContent.includes(query);
-	      });
-	      return occurrences;
+	  /**
+	   * @param  {number} time
+	   */
+
+
+	  _createClass(App, [{
+	    key: 'handleSubtitlesLoad',
+
+
+	    /**
+	     * @param  {string} response - text that represents subtitles
+	     */
+	    value: function handleSubtitlesLoad(response) {
+	      this.clear();
+	      this.searchEngine.setData(response);
 	    }
 
 	    /**
-	     * fuzzy search
-	     * 
-	     * @param  {Array<Node>} chunks
-	     * @param  {string} query
-	     * @param  {boolean} entireWord
-	     * @return {Array}
+	     * @param {XMLHttpRequest} xhr
 	     */
 
-	  }, {
-	    key: 'searchInChunks',
-	    value: function searchInChunks(chunks, query, entireWord) {
-	      var occurrences = chunks.filter(function (item, index) {
-	        return item.textContent.includes(query);
-	      });
-	      return occurrences;
-	    }
-
-	    /**
-	     * get time offset of specified sentence
-	     * @param  {Node} sentence
-	     * @return {number} time in seconds
-	     */
-
-	  }, {
-	    key: 'getTime',
-	    value: function getTime(sentence) {
-	      return sentence.getAttribute('t') / 1000;
-	    }
-
-	    /**
-	     * init textChunks
-	     * @param  {string} text - text that represents subtitles
-	     */
-
-	  }, {
-	    key: 'setData',
-	    value: function setData(text) {
-	      var parser = new DOMParser();
-	      var subtitles = parser.parseFromString(text, 'text/xml');
-	      var sentences = subtitles.getElementsByTagName('p');
-
-	      this.textChunks = [].slice.call(sentences, 0);
-	    }
-
-	    /**
-	     * @param  {string} query
-	     * @return {Array<string>} occurrences
-	     */
-
-	  }, {
-	    key: 'search',
-	    value: function search(query) {
-	      var _this = this;
-
-	      var result = this.searchInChunks(this.textChunks, query);
-	      return result.map(function (sentence) {
-	        return {
-	          time: _this.getTime(sentence)
-	        };
-	      });
-	    }
 	  }]);
 
-	  return SearchEngine;
+	  return App;
 	}();
 
-	exports.default = SearchEngine;
+	exports.default = App;
 
 /***/ },
 /* 2 */
@@ -295,6 +322,179 @@
 
 /***/ },
 /* 3 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var SearchEngine = function () {
+	  function SearchEngine() {
+	    _classCallCheck(this, SearchEngine);
+	  }
+
+	  _createClass(SearchEngine, [{
+	    key: 'searchInChunks1',
+	    value: function searchInChunks1(chunks, query) {
+	      var occurrences = chunks.filter(function (item) {
+	        return item.textContent.includes(query);
+	      });
+	      return occurrences;
+	    }
+
+	    /**
+	     * fuzzy search
+	     * 
+	     * @param  {Array<Node>} chunks
+	     * @param  {string} query
+	     * @param  {boolean?} entireWord
+	     * @return {Array}
+	     */
+
+	  }, {
+	    key: 'searchInChunks',
+	    value: function searchInChunks(chunks, query) {
+	      var queryWords = query.split(/\s+/).map(function (item) {
+	        return item.toLowerCase();
+	      });
+
+	      var occurrences = chunks.filter(function (item, index) {
+	        return item.textContent.includes(query);
+	      });
+	      return occurrences;
+	    }
+
+	    /**
+	     * @param {Node} chunk
+	     * @param {Array<string>} words
+	     */
+
+	  }, {
+	    key: 'contains',
+	    value: function contains(chunk, words) {
+	      var chunkWords = this.splitChunk(chunk);
+	      return String.prototype.includes.call(chunkWords, words);
+	    }
+
+	    /**
+	     * @param {Node} chunk
+	     * @param {Array<string>} words
+	     */
+
+	  }, {
+	    key: 'containsEnd',
+	    value: function containsEnd(chunk, words) {
+	      var chunkWords = this.splitChunk(chunk);
+	      return this.endOfFirstIsStartOfSecond(words, chunkWords);
+	    }
+
+	    /**
+	     * @param {Node} chunk
+	     * @param {Array<string>} words
+	     */
+
+	  }, {
+	    key: 'containsStart',
+	    value: function containsStart(chunk, words) {
+	      var chunkWords = this.splitChunk(chunk);
+	      return this.endOfFirstIsStartOfSecond(chunkWords, words);
+	    }
+
+	    /**
+	     * @param {Node} chunk
+	     * @returns {Array<string>}
+	     */
+
+	  }, {
+	    key: 'splitChunk',
+	    value: function splitChunk(chunk) {
+	      return chunk.textContent.split(/\s+/).map(function (item) {
+	        return item.toLowerCase();
+	      });
+	    }
+
+	    /**
+	     * @param {Array} a
+	     * @param {Array} b
+	     */
+
+	  }, {
+	    key: 'endOfFirstIsStartOfSecond',
+	    value: function endOfFirstIsStartOfSecond(a, b) {
+	      var stateIn = false;
+	      var pointer = 0;
+
+	      a.forEach(function (item) {
+	        if (item === b[pointer]) {
+	          pointer++;
+	          stateIn = true;
+	        } else {
+	          pointer = 0;
+	          stateIn = false;
+	        }
+	      });
+	      return pointer - 1;
+	    }
+
+	    /**
+	     * get time offset of specified sentence
+	     * @param  {HTMLElement} sentence
+	     * @return {number} time in seconds
+	     */
+
+	  }, {
+	    key: 'getTime',
+	    value: function getTime(sentence) {
+	      return sentence.getAttribute('t') / 1000;
+	    }
+
+	    /**
+	     * init textChunks
+	     * @param  {string} text - text that represents subtitles
+	     */
+
+	  }, {
+	    key: 'setData',
+	    value: function setData(text) {
+	      var parser = new DOMParser();
+	      var subtitles = parser.parseFromString(text, 'text/xml');
+	      var sentences = subtitles.getElementsByTagName('p');
+
+	      this.textChunks = [].slice.call(sentences, 0);
+	    }
+
+	    /**
+	     * @param  {string} query
+	     * @return {Array<string>} occurrences
+	     */
+
+	  }, {
+	    key: 'search',
+	    value: function search(query) {
+	      var _this = this;
+
+	      var result = this.searchInChunks(this.textChunks, query);
+	      return result.map(function (sentence) {
+	        return {
+	          time: _this.getTime(sentence)
+	        };
+	      });
+	    }
+	  }]);
+
+	  return SearchEngine;
+	}();
+
+	exports.default = SearchEngine;
+
+/***/ },
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -317,12 +517,8 @@
 
 	    _classCallCheck(this, ControlsView);
 
-	    this.gotoTime = function (time) {
-	      _this.$videoElement.currentTime = time - 1;
-	    };
-
 	    this.handleKeyDown = function (event) {
-	      // prevent default actions (i.e. fullscreen)
+	      // prevent default actions (i.e. full screen)
 	      event.stopPropagation();
 	      // close on escape
 	      if (event.keyCode === 27) {
@@ -335,7 +531,7 @@
 
 	    this.handleChange = function () {
 	      var query = _this.$input.value;
-	      _this.props.onSeachQueryChange(query);
+	      _this.props.onSearchQueryChange(query);
 	    };
 
 	    this.open = function () {
@@ -362,13 +558,8 @@
 	    value: function init() {
 	      this.$container = (0, _util.$)(_constants.CONTAINER_CLASS);
 	      this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
-	      this.remplate = __webpack_require__(8);
+	      this.remplate = __webpack_require__(6);
 	    }
-
-	    /**
-	     * @param  {number} time
-	     */
-
 	  }, {
 	    key: 'render',
 	    value: function render() {
@@ -402,7 +593,7 @@
 	    }
 
 	    /**
-	     * @param  {HTMLEvent} event
+	     * @param  {Event} event
 	     */
 
 
@@ -433,7 +624,35 @@
 	exports.default = ControlsView;
 
 /***/ },
-/* 4 */
+/* 5 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var CONTAINER_CLASS = exports.CONTAINER_CLASS = 'ytp-right-controls';
+	var TIMELINE_CLASS = exports.TIMELINE_CLASS = 'ytp-progress-bar-padding';
+	var SUBTITLES_BUTTON_CLASS = exports.SUBTITLES_BUTTON_CLASS = 'ytp-subtitles-button';
+	var DURATION_CLASS = exports.DURATION_CLASS = 'ytp-time-duration';
+	var VIDEO_ELEMENT_CLASS = exports.VIDEO_ELEMENT_CLASS = 'video-stream';
+	var PROGRESS_BAR_CLASS = exports.PROGRESS_BAR_CLASS = 'ytp-progress-bar';
+	var BOTTOM_PANE_CLASS = exports.BOTTOM_PANE_CLASS = 'ytp-chrome-bottom';
+
+	var OPENED_FORM_CLASS = exports.OPENED_FORM_CLASS = 'ms-search-form-opened';
+	var BUTTON_OPEN_CLASS = exports.BUTTON_OPEN_CLASS = 'ms-search-button';
+	var BUTTON_CLOSE_CLASS = exports.BUTTON_CLOSE_CLASS = 'ms-close-button';
+	var INPUT_CLASS = exports.INPUT_CLASS = 'ms-search-input';
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	module.exports = "<div class=\"ms-search-form {{className}}\">\n  <input\n    type=\"text\"\n    class=\"ms-search-input\"\n    {{tabIndexInput}}\n    placeholder=\"Search...\"\n  >\n  <button class=\"ms-search-button\" {{tabIndexOpen}}>\n    <span>⚲</span>\n  </button>\n  <button class=\"ms-close-button\" {{tabIndexInput}}>\n    <span>⚲</span>\n  </button>\n</div>\n"
+
+/***/ },
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -472,8 +691,8 @@
 	    this.$duration = (0, _util.$)(_constants.DURATION_CLASS);
 	    this.$progressBar = (0, _util.$)(_constants.PROGRESS_BAR_CLASS);
 	    this.$bottomPane = (0, _util.$)(_constants.BOTTOM_PANE_CLASS);
-	    this.markTemplate = __webpack_require__(6);
-	    this.markContainerTemplate = __webpack_require__(7);
+	    this.markTemplate = __webpack_require__(8);
+	    this.markContainerTemplate = __webpack_require__(9);
 
 	    this.renderContainer();
 	  }
@@ -576,47 +795,18 @@
 	exports.default = MarksView;
 
 /***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var CONTAINER_CLASS = exports.CONTAINER_CLASS = 'ytp-right-controls';
-	var TIMELINE_CLASS = exports.TIMELINE_CLASS = 'ytp-progress-bar-padding';
-	var SUBTITLES_BUTTON_CLASS = exports.SUBTITLES_BUTTON_CLASS = 'ytp-subtitles-button';
-	var DURATION_CLASS = exports.DURATION_CLASS = 'ytp-time-duration';
-	var VIDEO_ELEMENT_CLASS = exports.VIDEO_ELEMENT_CLASS = 'video-stream';
-	var PROGRESS_BAR_CLASS = exports.PROGRESS_BAR_CLASS = 'ytp-progress-bar';
-	var BOTTOM_PANE_CLASS = exports.BOTTOM_PANE_CLASS = 'ytp-chrome-bottom';
-
-	var OPENED_FORM_CLASS = exports.OPENED_FORM_CLASS = 'ms-search-form-opened';
-	var BUTTON_OPEN_CLASS = exports.BUTTON_OPEN_CLASS = 'ms-search-button';
-	var BUTTON_CLOSE_CLASS = exports.BUTTON_CLOSE_CLASS = 'ms-close-button';
-	var INPUT_CLASS = exports.INPUT_CLASS = 'ms-search-input';
-
-/***/ },
-/* 6 */
+/* 8 */
 /***/ function(module, exports) {
 
 	module.exports = "<span\n  class=\"ms-timeline-mark\"\n  style=\"left: {{left}}px\"\n  data-time=\"{{timeValue}}\"\n>\n  <span>{{time}}</span>\n</span>\n"
 
 /***/ },
-/* 7 */
+/* 9 */
 /***/ function(module, exports) {
 
 	module.exports = "<div class=\"ms-mark-container\"></div>\n"
 
 /***/ },
-/* 8 */
-/***/ function(module, exports) {
-
-	module.exports = "<div class=\"ms-search-form {{className}}\">\n  <input\n    type=\"text\"\n    class=\"ms-search-input\"\n    {{tabIndexInput}}\n    placeholder=\"Search...\"\n  >\n  <button class=\"ms-search-button\" {{tabIndexOpen}}>\n    <span>⚲</span>\n  </button>\n  <button class=\"ms-close-button\" {{tabIndexInput}}>\n    <span>⚲</span>\n  </button>\n</div>\n"
-
-/***/ },
-/* 9 */,
 /* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -962,125 +1152,6 @@
 			URL.revokeObjectURL(oldSrc);
 	}
 
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	var _util = __webpack_require__(2);
-
-	var _SearchEngine = __webpack_require__(1);
-
-	var _SearchEngine2 = _interopRequireDefault(_SearchEngine);
-
-	var _ControlsView = __webpack_require__(3);
-
-	var _ControlsView2 = _interopRequireDefault(_ControlsView);
-
-	var _MarksView = __webpack_require__(4);
-
-	var _MarksView2 = _interopRequireDefault(_MarksView);
-
-	var _constants = __webpack_require__(5);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var Controller = function () {
-	  function Controller() {
-	    var _this = this;
-
-	    _classCallCheck(this, Controller);
-
-	    this.init = function () {
-	      _this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
-	      _this.$subtitlesButton = (0, _util.$)(_constants.SUBTITLES_BUTTON_CLASS);
-	      _this.loadSubtitles();
-	      _this.createViews();
-	    };
-
-	    this.createViews = function () {
-	      _this.resultView = new _MarksView2.default({
-	        onTimeChange: _this.gotoTime
-	      });
-	      _this.controlsView = new _ControlsView2.default({
-	        onSeachQueryChange: _this.onSeachQueryChange,
-	        onClose: _this.clear
-	      });
-	    };
-
-	    this.onSeachQueryChange = function (query) {
-	      _this.clear();
-	      if (query.length < 3) {
-	        return;
-	      }
-	      var occurrences = _this.searchEngine.search(query);
-	      _this.resultView.render(occurrences);
-	    };
-
-	    this.clear = function () {
-	      _this.resultView.clear();
-	    };
-
-	    this.gotoTime = function (time) {
-	      _this.$videoElement.currentTime = time - 1;
-	    };
-
-	    this.changeView = function (viewName) {
-	      _this.resultView.remove();
-	    };
-
-	    this.httpSpy = function (xhr) {
-	      if (!xhr.responseURL.includes('timedtext')) {
-	        return;
-	      }
-
-	      _this.handleSubtitlesLoad(xhr.response);
-	    };
-
-	    this.loadSubtitles = function () {
-	      setTimeout(function () {
-	        (0, _util.triggerEvent)(_this.$subtitlesButton, 'click');
-	        (0, _util.triggerEvent)(_this.$subtitlesButton, 'click');
-	      }, 1000);
-	    };
-
-	    (0, _util.spyOnHttp)(this.httpSpy);
-	    this.searchEngine = new _SearchEngine2.default();
-	    _util.$.on(document, 'DOMContentLoaded', this.init);
-	  }
-
-	  /**
-	   * @param  {number} time
-	   */
-
-
-	  _createClass(Controller, [{
-	    key: 'handleSubtitlesLoad',
-
-
-	    /**
-	     * @param  {string} response - text that represents subtitles
-	     */
-	    value: function handleSubtitlesLoad(response) {
-	      this.clear();
-	      this.searchEngine.setData(response);
-	    }
-	  }]);
-
-	  return Controller;
-	}();
-
-	exports.default = Controller;
 
 /***/ }
 /******/ ]);

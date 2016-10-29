@@ -8,7 +8,7 @@ import {
   SUBTITLES_BUTTON_CLASS
 } from './constants';
 
-export default class Controller {
+export default class App {
   constructor() {
     spyOnHttp(this.httpSpy);
     this.searchEngine = new SearchEngine();
@@ -24,15 +24,15 @@ export default class Controller {
 
   createViews = () => {
     this.resultView = new MarksView({
-      onTimeChange: this.gotoTime
+      onTimeChange: this.goToTime
     });
     this.controlsView = new ControlsView({
-      onSeachQueryChange: this.onSeachQueryChange,
+      onSearchQueryChange: this.onSearchQueryChange,
       onClose: this.clear
     });
   }
 
-  onSeachQueryChange = (query) => {
+  onSearchQueryChange = (query) => {
     this.clear();
     if (query.length < 3) { return; }
     const occurrences = this.searchEngine.search(query);
@@ -47,7 +47,7 @@ export default class Controller {
   /**
    * @param  {number} time
    */
-  gotoTime = (time) => {
+  goToTime = (time) => {
     this.$videoElement.currentTime = time - 1;
   }
 
@@ -64,12 +64,17 @@ export default class Controller {
     this.searchEngine.setData(response);
   }
 
+  /**
+   * @param {XMLHttpRequest} xhr
+   */
   httpSpy = (xhr) => {
     if (!xhr.responseURL.includes('timedtext')) {
       return;
     }
+
+    console.log(xhr);
     
-    this.handleSubtitlesLoad(xhr.response);
+    this.handleSubtitlesLoad(xhr.responseText);
   }
 
   loadSubtitles = () => {

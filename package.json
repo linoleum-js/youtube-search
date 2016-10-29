@@ -1,11 +1,13 @@
 {
   "name": "youtube-search",
   "version": "0.0.1",
+
   "scripts": {
     "build-test": "webpack --config webpack-test.config.js --watch",
     "postinstall": "webpack",
-    "test": "npm run build-test & jasmine"
+    "test": "npm run build-test & karma start"
   },
+
   "devDependencies": {
     "babel-core": "^6.17.0",
     "babel-loader": "^6.2.5",
