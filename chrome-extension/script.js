@@ -136,8 +136,6 @@
 	        return;
 	      }
 
-	      console.log(xhr);
-
 	      _this.handleSubtitlesLoad(xhr.responseText);
 	    };
 
@@ -330,6 +328,8 @@
 	  value: true
 	});
 
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -340,118 +340,102 @@
 	  }
 
 	  _createClass(SearchEngine, [{
-	    key: 'searchInChunks1',
-	    value: function searchInChunks1(chunks, query) {
-	      var occurrences = chunks.filter(function (item) {
-	        return item.textContent.includes(query);
-	      });
-	      return occurrences;
-	    }
-
-	    /**
-	     * fuzzy search
-	     * 
-	     * @param  {Array<Node>} chunks
-	     * @param  {string} query
-	     * @param  {boolean?} entireWord
-	     * @return {Array}
-	     */
-
-	  }, {
 	    key: 'searchInChunks',
-	    value: function searchInChunks(chunks, query) {
-	      var queryWords = query.split(/\s+/).map(function (item) {
-	        return item.toLowerCase();
-	      });
-
-	      var occurrences = chunks.filter(function (item, index) {
-	        return item.textContent.includes(query);
-	      });
-	      return occurrences;
-	    }
 
 	    /**
-	     * @param {Node} chunk
-	     * @param {Array<string>} words
+	     *
+	     * @param {string} query
+	     * @returns {Array}
 	     */
+	    value: function searchInChunks(query) {
+	      var currentOffset = 0;
+	      var currentSearchResult = void 0;
+	      var result = [];
+	      query = query.trim().replace(/\s+/, ' ');
 
-	  }, {
-	    key: 'contains',
-	    value: function contains(chunk, words) {
-	      var chunkWords = this.splitChunk(chunk);
-	      return String.prototype.includes.call(chunkWords, words);
-	    }
-
-	    /**
-	     * @param {Node} chunk
-	     * @param {Array<string>} words
-	     */
-
-	  }, {
-	    key: 'containsEnd',
-	    value: function containsEnd(chunk, words) {
-	      var chunkWords = this.splitChunk(chunk);
-	      return this.endOfFirstIsStartOfSecond(words, chunkWords);
-	    }
-
-	    /**
-	     * @param {Node} chunk
-	     * @param {Array<string>} words
-	     */
-
-	  }, {
-	    key: 'containsStart',
-	    value: function containsStart(chunk, words) {
-	      var chunkWords = this.splitChunk(chunk);
-	      return this.endOfFirstIsStartOfSecond(chunkWords, words);
-	    }
-
-	    /**
-	     * @param {Node} chunk
-	     * @returns {Array<string>}
-	     */
-
-	  }, {
-	    key: 'splitChunk',
-	    value: function splitChunk(chunk) {
-	      return chunk.textContent.split(/\s+/).map(function (item) {
-	        return item.toLowerCase();
-	      });
-	    }
-
-	    /**
-	     * @param {Array} a
-	     * @param {Array} b
-	     */
-
-	  }, {
-	    key: 'endOfFirstIsStartOfSecond',
-	    value: function endOfFirstIsStartOfSecond(a, b) {
-	      var stateIn = false;
-	      var pointer = 0;
-
-	      a.forEach(function (item) {
-	        if (item === b[pointer]) {
-	          pointer++;
-	          stateIn = true;
-	        } else {
-	          pointer = 0;
-	          stateIn = false;
+	      do {
+	        currentSearchResult = this.searchFromIndex(query, currentOffset);
+	        if (currentSearchResult) {
+	          result.push(this.addTimeToResultItem(currentSearchResult));
+	          currentOffset = currentSearchResult.offsetEnd;
 	        }
+	      } while (currentSearchResult);
+
+	      return result;
+	    }
+	  }, {
+	    key: 'addTimeToResultItem',
+	    value: function addTimeToResultItem(item) {
+	      return _extends({}, item, {
+	        time: this.getTime(item.chunks[0].data)
 	      });
-	      return pointer - 1;
+	    }
+	  }, {
+	    key: 'searchFromIndex',
+	    value: function searchFromIndex(query, startIndex) {
+	      var offsetStart = this.getSubstringStart(query, startIndex);
+	      if (offsetStart === -1) {
+	        return null;
+	      }
+
+	      var offsetEnd = offsetStart + query.length;
+	      var startChunk = this.getChunkByOffset(offsetStart);
+	      var endChunk = this.getChunkByOffset(offsetEnd);
+	      var startChunkOffset = startChunk.offset;
+	      var endChunkOffset = endChunk.offset;
+	      var chunks = this.getChunksInSegment(startChunkOffset, endChunkOffset);
+
+	      return {
+	        chunks: chunks,
+	        offsetStart: offsetStart,
+	        offsetEnd: offsetEnd
+	      };
+	    }
+	  }, {
+	    key: 'getChunksInSegment',
+	    value: function getChunksInSegment(start, end) {
+	      var result = [];
+	      for (var offset = start; offset <= end; offset++) {
+	        var chunk = this.mapOffsetToChunk(offset);
+	        if (chunk) {
+	          result.push({
+	            offset: offset,
+	            data: chunk
+	          });
+	        }
+	      }
+	      return result;
+	    }
+	  }, {
+	    key: 'getChunkByOffset',
+	    value: function getChunkByOffset(offset) {
+	      var result = void 0;
+	      do {
+	        result = this.mapOffsetToChunk(offset);
+	        offset--;
+	      } while (offset && !result);
+
+	      return {
+	        offset: offset + 1,
+	        chunk: result
+	      };
+	    }
+	  }, {
+	    key: 'getSubstringStart',
+	    value: function getSubstringStart(query, startIndex) {
+	      return this.subtitles.indexOf(query, startIndex);
 	    }
 
 	    /**
 	     * get time offset of specified sentence
-	     * @param  {HTMLElement} sentence
+	     * @param  {HTMLElement} chunk
 	     * @return {number} time in seconds
 	     */
 
 	  }, {
 	    key: 'getTime',
-	    value: function getTime(sentence) {
-	      return sentence.getAttribute('t') / 1000;
+	    value: function getTime(chunk) {
+	      return chunk.getAttribute('t') / 1000;
 	    }
 
 	    /**
@@ -466,7 +450,34 @@
 	      var subtitles = parser.parseFromString(text, 'text/xml');
 	      var sentences = subtitles.getElementsByTagName('p');
 
-	      this.textChunks = [].slice.call(sentences, 0);
+	      // remove spaces
+	      this.textChunks = [].slice.call(sentences, 0).map(function (chunk) {
+	        var cleanText = chunk.textContent.replace(/\s+/g, ' ');
+	        chunk.textContent = cleanText;
+	        return chunk;
+	      });
+	      this.subtitles = this.textChunks.map(function (chunk) {
+	        return chunk.textContent.trim();
+	      }).filter(function (item) {
+	        return item;
+	      }).join(' ');
+	      this.initOffsets();
+	    }
+	  }, {
+	    key: 'initOffsets',
+	    value: function initOffsets() {
+	      var offsets = {};
+	      var currentOffset = 0;
+	      this.textChunks.forEach(function (chunk) {
+	        offsets[currentOffset] = chunk;
+	        currentOffset += chunk.textContent.length;
+	      });
+	      this.offsets = offsets;
+	    }
+	  }, {
+	    key: 'mapOffsetToChunk',
+	    value: function mapOffsetToChunk(offset) {
+	      return this.offsets[offset];
 	    }
 
 	    /**
@@ -477,14 +488,9 @@
 	  }, {
 	    key: 'search',
 	    value: function search(query) {
-	      var _this = this;
-
-	      var result = this.searchInChunks(this.textChunks, query);
-	      return result.map(function (sentence) {
-	        return {
-	          time: _this.getTime(sentence)
-	        };
-	      });
+	      var res = this.searchInChunks(query);
+	      console.log(res);
+	      return res;
 	    }
 	  }]);
 

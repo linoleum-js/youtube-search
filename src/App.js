@@ -71,8 +71,6 @@ export default class App {
     if (!xhr.responseURL.includes('timedtext')) {
       return;
     }
-
-    console.log(xhr);
     
     this.handleSubtitlesLoad(xhr.responseText);
   }

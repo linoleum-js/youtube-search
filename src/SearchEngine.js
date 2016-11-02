@@ -1,99 +1,90 @@
 
 export default class SearchEngine {
-  searchInChunks1 (chunks, query) {
-    const occurrences = chunks.filter((item) => {
-      return item.textContent.includes(query);
-    });
-    return occurrences;
-  }
-
   /**
-   * fuzzy search
-   * 
-   * @param  {Array<Node>} chunks
-   * @param  {string} query
-   * @param  {boolean?} entireWord
-   * @return {Array}
+   *
+   * @param {string} query
+   * @returns {Array}
    */
-  searchInChunks (chunks, query) {
-    const queryWords = query.split(/\s+/).map((item) => {
-      return item.toLowerCase();
-    });
+  searchInChunks (query) {
+    let currentOffset = 0;
+    let currentSearchResult;
+    const result = [];
+    query = query.trim().replace(/\s+/, ' ');
 
-    const occurrences = chunks.filter((item, index) => {
-      return item.textContent.includes(query);
-    });
-    return occurrences;
-  }
-
-  /**
-   * @param {Node} chunk
-   * @param {Array<string>} words
-   */
-  contains(chunk, words) {
-    const chunkWords = this.splitChunk(chunk);
-    return chunkWords::String.prototype.includes(words);
-  }
-
-  /**
-   * @param {Node} chunk
-   * @param {Array<string>} words
-   */
-  containsEnd(chunk, words) {
-    const chunkWords = this.splitChunk(chunk);
-    return this.endOfFirstIsStartOfSecond(
-      words, chunkWords
-    );
-  }
-
-  /**
-   * @param {Node} chunk
-   * @param {Array<string>} words
-   */
-  containsStart(chunk, words) {
-    const chunkWords = this.splitChunk(chunk);
-    return this.endOfFirstIsStartOfSecond(
-      chunkWords, words
-    );
-  }
-
-  /**
-   * @param {Node} chunk
-   * @returns {Array<string>}
-   */
-  splitChunk(chunk) {
-    return chunk.textContent.split(/\s+/).map((item) => {
-      return item.toLowerCase();
-    });
-  }
-
-  /**
-   * @param {Array} a
-   * @param {Array} b
-   */
-  endOfFirstIsStartOfSecond(a, b) {
-    let stateIn = false;
-    let pointer = 0;
-
-    a.forEach((item) => {
-      if (item === b[pointer]) {
-        pointer++;
-        stateIn = true;
-      } else {
-        pointer = 0;
-        stateIn = false;
+    do {
+      currentSearchResult = this.searchFromIndex(query, currentOffset);
+      if (currentSearchResult) {
+        result.push(this.addTimeToResultItem(currentSearchResult));
+        currentOffset = currentSearchResult.offsetEnd;
       }
-    });
-    return pointer - 1;
+    } while (currentSearchResult);
+
+    return result;
+  }
+
+  addTimeToResultItem(item) {
+    return {
+      ...item,
+      time: this.getTime(item.chunks[0].data)
+    };
+  }
+
+  searchFromIndex(query, startIndex) {
+    const offsetStart = this.getSubstringStart(query, startIndex);
+    if (offsetStart === -1) { return null; }
+
+    const offsetEnd = offsetStart + query.length;
+    const startChunk = this.getChunkByOffset(offsetStart);
+    const endChunk = this.getChunkByOffset(offsetEnd);
+    const startChunkOffset = startChunk.offset;
+    const endChunkOffset = endChunk.offset;
+    const chunks = this.getChunksInSegment(startChunkOffset, endChunkOffset);
+
+    return {
+      chunks,
+      offsetStart,
+      offsetEnd
+    }
+  }
+
+  getChunksInSegment(start, end) {
+    let result = [];
+    for (let offset = start; offset <= end; offset++) {
+      const chunk = this.mapOffsetToChunk(offset);
+      if (chunk) {
+        result.push({
+          offset: offset,
+          data: chunk
+        });
+      }
+    }
+    return result;
+  }
+
+  getChunkByOffset(offset) {
+    let result;
+    do {
+      result = this.mapOffsetToChunk(offset);
+      offset--;
+    } while (offset && !result);
+
+    return {
+      offset: offset + 1,
+      chunk: result
+    };
+  }
+
+  getSubstringStart(query, startIndex) {
+    return this.subtitles.indexOf(query, startIndex);
   }
 
   /**
    * get time offset of specified sentence
-   * @param  {HTMLElement} sentence
+   * @param  {HTMLElement} chunk
    * @return {number} time in seconds
    */
-  getTime (sentence) {
-    return sentence.getAttribute('t') / 1000;
+  getTime (chunk) {
+    return chunk.getAttribute('t') / 1000;
   }
 
   /**
@@ -105,7 +96,30 @@ export default class SearchEngine {
     const subtitles = parser.parseFromString(text, 'text/xml');
     const sentences = subtitles.getElementsByTagName('p');
 
-    this.textChunks = sentences::[].slice(0);
+    // remove spaces
+    this.textChunks = sentences::[].slice(0).map((chunk) => {
+      const cleanText = chunk.textContent.replace(/\s+/g, ' ');
+      chunk.textContent = cleanText;
+      return chunk;
+    });
+    this.subtitles = this.textChunks.map((chunk) => {
+      return chunk.textContent.trim();
+    }).filter(item => item).join(' ');
+    this.initOffsets();
+  }
+
+  initOffsets() {
+    const offsets = {};
+    let currentOffset = 0;
+    this.textChunks.forEach((chunk) => {
+      offsets[currentOffset] = chunk;
+      currentOffset += chunk.textContent.length;
+    });
+    this.offsets = offsets;
+  }
+
+  mapOffsetToChunk(offset) {
+    return this.offsets[offset];
   }
 
   /**
@@ -113,11 +127,9 @@ export default class SearchEngine {
    * @return {Array<string>} occurrences
    */
   search (query) {
-    const result = this.searchInChunks(this.textChunks, query);
-    return result.map((sentence) => {
-      return {
-        time: this.getTime(sentence)
-      }
-    });
+    const res = this.searchInChunks(query);
+    console.log(res);
+    return res;
+
   }
 }

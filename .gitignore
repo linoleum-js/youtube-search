@@ -1,3 +1,4 @@
 node_modules
 spec/spec.js
+spec/test-data.xml
 .idea
