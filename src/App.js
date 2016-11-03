@@ -78,7 +78,9 @@ export default class App {
   loadSubtitles = () => {
     setTimeout(() => {
       triggerEvent(this.$subtitlesButton, 'click');
-      triggerEvent(this.$subtitlesButton, 'click');
+      setTimeout(() => {
+        triggerEvent(this.$subtitlesButton, 'click');
+      }, 1000);
     }, 1000);
   }
 }
