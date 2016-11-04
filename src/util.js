@@ -117,3 +117,16 @@ export function getParent ($node, filter) {
 
   return $currentNode;
 }
+
+export const onUrlChange = (() => {
+  let lastHref = location.href;
+  return (callback) => {
+    setInterval(() => {
+      const newHref = location.href;
+      if (lastHref !== newHref) {
+        lastHref = newHref;
+        callback(newHref);
+      }
+    }, 1000);
+  };
+})();

@@ -16,7 +16,6 @@ export default class MarksView {
     this.onTimeChange = props.onTimeChange;
 
     this.$timeline = $(TIMELINE_CLASS);
-    this.$duration = $(DURATION_CLASS);
     this.$progressBar = $(PROGRESS_BAR_CLASS);
     this.$bottomPane = $(BOTTOM_PANE_CLASS);
     this.markTemplate = require('../templates/mark.html');
