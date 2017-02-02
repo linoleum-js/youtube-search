@@ -13,7 +13,8 @@ module.exports = {
 		loaders: [
       { test: /\.js$/, loader: 'babel' },
 			{ test: /\.css$/, loader: 'style!css' },
-      { test: /\.html$/, loader: 'text' }
+      { test: /\.html$/, loader: 'text' },
+			{ test: /\.png$/, loader: 'url-loader' }
 		]
 	}
 };

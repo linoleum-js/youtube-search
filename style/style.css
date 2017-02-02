@@ -76,13 +76,6 @@
   cursor: pointer;
 }
 
-.ms-search-form button span {
-  position: relative;
-  display: inline-block;
-  transform: rotate(45deg);
-  -webkit-transform: rotate(45deg);
-}
-
 
 .ms-search-form input {
   background-color: rgba(0, 0, 0, .5);
@@ -122,4 +115,16 @@
   position: absolute;
   bottom: 30px;
   width: 100%;
+}
+
+.ms-search-icon {
+  background-image: url(../assest/search.png);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  position: relative;
+  top: 2px;
 }
