@@ -12,7 +12,6 @@ export default class App {
   constructor() {
     spyOnHttp(this.httpSpy);
     onUrlChange(this.removeViews);
-    this.searchEngine = new SearchEngine();
     $.on(document, 'DOMContentLoaded', this.init);
   }
 
@@ -64,7 +63,7 @@ export default class App {
    */
   handleSubtitlesLoad = (response) => {
     this.removeViews();
-    this.searchEngine.setData(response);
+    this.searchEngine = new SearchEngine(response);
     this.createViews();
   }
 

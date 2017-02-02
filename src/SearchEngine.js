@@ -1,5 +1,8 @@
 
 export default class SearchEngine {
+  constructor(text) {
+    this.setData(text);
+  }
   /**
    *
    * @param {string} query
@@ -25,13 +28,12 @@ export default class SearchEngine {
   searchFromIndex(query, startIndex) {
     const offsetStart = this.getSubstringStart(query, startIndex);
     if (offsetStart === -1) { return null; }
-
     const offsetEnd = offsetStart + query.length;
-    const startChunkOffset = this.getClosestChunkOffset(offsetStart);
-    const endChunkOffset = this.getClosestChunkOffset(offsetEnd);
-    const chunks = this.getChunksInSegment(startChunkOffset, endChunkOffset);
-    const firstChunk = chunks[0].data;
-    const time = this.getTime(firstChunk);
+
+    const firstChunkOffset = this.getClosestLeftChunkOffset(offsetStart);
+    const lastChunkOffset = this.getClosestLeftChunkOffset(offsetEnd);
+    const chunks = this.getChunksInSegment(firstChunkOffset, lastChunkOffset);
+    const time = this.getChunksStartTime(chunks);
 
     return {
       chunks,
@@ -39,6 +41,11 @@ export default class SearchEngine {
       offsetEnd,
       time
     }
+  }
+
+  getChunksStartTime(chunks) {
+    const firstChunk = chunks[0].data;
+    return this.getTime(firstChunk);
   }
 
   getChunksInSegment(start, end) {
@@ -55,7 +62,7 @@ export default class SearchEngine {
     return result;
   }
 
-  getClosestChunkOffset(offset) {
+  getClosestLeftChunkOffset(offset) {
     let result;
     do {
       result = this.mapOffsetToChunk(offset);

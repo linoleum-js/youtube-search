@@ -23,14 +23,13 @@ describe('SearchEngine', () => {
 
   });
 
-  //it('s d', () => {
-  //  const testData = testDataXml;
-  //
-  //  const searchEngine = new SearchEngine();
-  //  searchEngine.setData(testData);
-  //  const result = searchEngine.search('первыми дисками посла');
-  //  expect(result.length).toBe(1);
-  //  expect(result[0].time).toBe(142.68);
-  //  console.log(searchEngine.offsets);
-  //});
+  it('s d', () => {
+    const testData = testDataXml;
+
+    const searchEngine = new SearchEngine();
+    searchEngine.setData(testData);
+    const result = searchEngine.search('первыми дисками посла');
+    expect(result.length).toBe(1);
+    expect(result[0].time).toBe(142.68);
+  });
 });

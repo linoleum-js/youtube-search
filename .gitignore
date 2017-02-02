@@ -2,3 +2,4 @@ node_modules
 spec/spec.js
 spec/test-data.xml
 .idea
+chrome-extension/chrome-extension.zip

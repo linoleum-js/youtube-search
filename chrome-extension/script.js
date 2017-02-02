@@ -65,8 +65,6 @@
 	  value: true
 	});
 
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 	var _util = __webpack_require__(2);
 
 	var _SearchEngine = __webpack_require__(3);
@@ -87,95 +85,84 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var App = function () {
-	  function App() {
-	    var _this = this;
+	var App = function App() {
+	  var _this = this;
 
-	    _classCallCheck(this, App);
+	  _classCallCheck(this, App);
 
-	    this.init = function () {
-	      _this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
-	      _this.$subtitlesButton = (0, _util.$)(_constants.SUBTITLES_BUTTON_CLASS);
-	      _this.loadSubtitles();
-	      _this.createViews();
-	    };
+	  this.init = function () {
+	    _this.$videoElement = (0, _util.$)(_constants.VIDEO_ELEMENT_CLASS);
+	  };
 
-	    this.createViews = function () {
-	      _this.resultView = new _MarksView2.default({
-	        onTimeChange: _this.goToTime
-	      });
-	      _this.controlsView = new _ControlsView2.default({
-	        onSearchQueryChange: _this.onSearchQueryChange,
-	        onClose: _this.clear
-	      });
-	    };
+	  this.createViews = function () {
+	    _this.resultView = new _MarksView2.default({
+	      onTimeChange: _this.goToTime
+	    });
+	    _this.controlsView = new _ControlsView2.default({
+	      onSearchQueryChange: _this.onSearchQueryChange,
+	      onClose: _this.clear
+	    });
+	  };
 
-	    this.onSearchQueryChange = function (query) {
-	      _this.clear();
-	      if (query.length < 3) {
-	        return;
-	      }
-	      var occurrences = _this.searchEngine.search(query);
-	      _this.resultView.render(occurrences);
-	    };
-
-	    this.clear = function () {
-	      _this.resultView.clear();
-	    };
-
-	    this.goToTime = function (time) {
-	      _this.$videoElement.currentTime = time - 1;
-	    };
-
-	    this.changeView = function (viewName) {
+	  this.removeViews = function () {
+	    if (_this.controlsView) {
+	      _this.controlsView.remove();
+	      _this.controlsView = null;
 	      _this.resultView.remove();
-	    };
+	      _this.resultView = null;
+	    }
+	  };
 
-	    this.httpSpy = function (xhr) {
-	      if (!xhr.responseURL.includes('timedtext')) {
-	        return;
-	      }
+	  this.onSearchQueryChange = function (query) {
+	    _this.clear();
+	    if (query.length < 3) {
+	      return;
+	    }
+	    var occurrences = _this.searchEngine.search(query);
+	    _this.resultView.render(occurrences);
+	  };
 
-	      _this.handleSubtitlesLoad(xhr.responseText);
-	    };
+	  this.clear = function () {
+	    _this.resultView.clear();
+	  };
 
-	    this.loadSubtitles = function () {
-	      setTimeout(function () {
-	        (0, _util.triggerEvent)(_this.$subtitlesButton, 'click');
-	        (0, _util.triggerEvent)(_this.$subtitlesButton, 'click');
-	      }, 1000);
-	    };
+	  this.goToTime = function (time) {
+	    _this.$videoElement.currentTime = time - 1;
+	  };
 
-	    (0, _util.spyOnHttp)(this.httpSpy);
-	    this.searchEngine = new _SearchEngine2.default();
-	    _util.$.on(document, 'DOMContentLoaded', this.init);
-	  }
+	  this.handleSubtitlesLoad = function (response) {
+	    _this.removeViews();
+	    _this.searchEngine = new _SearchEngine2.default(response);
+	    _this.createViews();
+	  };
 
-	  /**
-	   * @param  {number} time
-	   */
-
-
-	  _createClass(App, [{
-	    key: 'handleSubtitlesLoad',
-
-
-	    /**
-	     * @param  {string} response - text that represents subtitles
-	     */
-	    value: function handleSubtitlesLoad(response) {
-	      this.clear();
-	      this.searchEngine.setData(response);
+	  this.httpSpy = function (xhr) {
+	    if (!xhr.responseURL.includes('timedtext')) {
+	      return;
 	    }
 
-	    /**
-	     * @param {XMLHttpRequest} xhr
-	     */
+	    _this.handleSubtitlesLoad(xhr.responseText);
+	  };
 
-	  }]);
+	  (0, _util.spyOnHttp)(this.httpSpy);
+	  (0, _util.onUrlChange)(this.removeViews);
+	  _util.$.on(document, 'DOMContentLoaded', this.init);
+	}
 
-	  return App;
-	}();
+	/**
+	 * @param  {number} time
+	 */
+
+
+	/**
+	 * @param  {string} response - text that represents subtitles
+	 */
+
+
+	/**
+	 * @param {XMLHttpRequest} xhr
+	 */
+	;
 
 	exports.default = App;
 
@@ -318,6 +305,19 @@
 	  return $currentNode;
 	}
 
+	var onUrlChange = exports.onUrlChange = function () {
+	  var lastHref = location.href;
+	  return function (callback) {
+	    setInterval(function () {
+	      var newHref = location.href;
+	      if (lastHref !== newHref) {
+	        lastHref = newHref;
+	        callback(newHref);
+	      }
+	    }, 1000);
+	  };
+	}();
+
 /***/ },
 /* 3 */
 /***/ function(module, exports) {
@@ -328,25 +328,25 @@
 	  value: true
 	});
 
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var SearchEngine = function () {
-	  function SearchEngine() {
+	  function SearchEngine(text) {
 	    _classCallCheck(this, SearchEngine);
+
+	    this.setData(text);
 	  }
+	  /**
+	   *
+	   * @param {string} query
+	   * @returns {Array}
+	   */
+
 
 	  _createClass(SearchEngine, [{
 	    key: 'searchInChunks',
-
-	    /**
-	     *
-	     * @param {string} query
-	     * @returns {Array}
-	     */
 	    value: function searchInChunks(query) {
 	      var currentOffset = 0;
 	      var currentSearchResult = void 0;
@@ -356,19 +356,12 @@
 	      do {
 	        currentSearchResult = this.searchFromIndex(query, currentOffset);
 	        if (currentSearchResult) {
-	          result.push(this.addTimeToResultItem(currentSearchResult));
+	          result.push(currentSearchResult);
 	          currentOffset = currentSearchResult.offsetEnd;
 	        }
 	      } while (currentSearchResult);
 
 	      return result;
-	    }
-	  }, {
-	    key: 'addTimeToResultItem',
-	    value: function addTimeToResultItem(item) {
-	      return _extends({}, item, {
-	        time: this.getTime(item.chunks[0].data)
-	      });
 	    }
 	  }, {
 	    key: 'searchFromIndex',
@@ -377,19 +370,25 @@
 	      if (offsetStart === -1) {
 	        return null;
 	      }
-
 	      var offsetEnd = offsetStart + query.length;
-	      var startChunk = this.getChunkByOffset(offsetStart);
-	      var endChunk = this.getChunkByOffset(offsetEnd);
-	      var startChunkOffset = startChunk.offset;
-	      var endChunkOffset = endChunk.offset;
-	      var chunks = this.getChunksInSegment(startChunkOffset, endChunkOffset);
+
+	      var firstChunkOffset = this.getClosestLeftChunkOffset(offsetStart);
+	      var lastChunkOffset = this.getClosestLeftChunkOffset(offsetEnd);
+	      var chunks = this.getChunksInSegment(firstChunkOffset, lastChunkOffset);
+	      var time = this.getChunksStartTime(chunks);
 
 	      return {
 	        chunks: chunks,
 	        offsetStart: offsetStart,
-	        offsetEnd: offsetEnd
+	        offsetEnd: offsetEnd,
+	        time: time
 	      };
+	    }
+	  }, {
+	    key: 'getChunksStartTime',
+	    value: function getChunksStartTime(chunks) {
+	      var firstChunk = chunks[0].data;
+	      return this.getTime(firstChunk);
 	    }
 	  }, {
 	    key: 'getChunksInSegment',
@@ -407,18 +406,15 @@
 	      return result;
 	    }
 	  }, {
-	    key: 'getChunkByOffset',
-	    value: function getChunkByOffset(offset) {
+	    key: 'getClosestLeftChunkOffset',
+	    value: function getClosestLeftChunkOffset(offset) {
 	      var result = void 0;
 	      do {
 	        result = this.mapOffsetToChunk(offset);
 	        offset--;
 	      } while (offset && !result);
 
-	      return {
-	        offset: offset + 1,
-	        chunk: result
-	      };
+	      return offset + 1;
 	    }
 	  }, {
 	    key: 'getSubstringStart',
@@ -489,7 +485,6 @@
 	    key: 'search',
 	    value: function search(query) {
 	      var res = this.searchInChunks(query);
-	      console.log(res);
 	      return res;
 	    }
 	  }]);
@@ -655,7 +650,7 @@
 /* 6 */
 /***/ function(module, exports) {
 
-	module.exports = "<div class=\"ms-search-form {{className}}\">\n  <input\n    type=\"text\"\n    class=\"ms-search-input\"\n    {{tabIndexInput}}\n    placeholder=\"Search...\"\n  >\n  <button class=\"ms-search-button\" {{tabIndexOpen}}>\n    <span>⚲</span>\n  </button>\n  <button class=\"ms-close-button\" {{tabIndexInput}}>\n    <span>⚲</span>\n  </button>\n</div>\n"
+	module.exports = "<div class=\"ms-search-form {{className}}\">\n  <input\n    type=\"text\"\n    class=\"ms-search-input\"\n    {{tabIndexInput}}\n    placeholder=\"Search...\"\n    autofocus\n  >\n  <button class=\"ms-search-button\" {{tabIndexOpen}}>\n    <span>⚲</span>\n  </button>\n  <button class=\"ms-close-button\" {{tabIndexInput}}>\n    <span>⚲</span>\n  </button>\n</div>\n"
 
 /***/ },
 /* 7 */
@@ -694,7 +689,6 @@
 	    this.onTimeChange = props.onTimeChange;
 
 	    this.$timeline = (0, _util.$)(_constants.TIMELINE_CLASS);
-	    this.$duration = (0, _util.$)(_constants.DURATION_CLASS);
 	    this.$progressBar = (0, _util.$)(_constants.PROGRESS_BAR_CLASS);
 	    this.$bottomPane = (0, _util.$)(_constants.BOTTOM_PANE_CLASS);
 	    this.markTemplate = __webpack_require__(8);

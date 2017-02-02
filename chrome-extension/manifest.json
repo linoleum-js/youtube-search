@@ -1,14 +1,14 @@
 
 {
-  "name": "Allow-Control-Allow-Origin: *",
+  "name": "Youtube text search",
   "version": "1.0.2",
   "manifest_version": 2,
-  "description": "Allows to you request any site with ajax from any source. Adds to response 'Allow-Control-Allow-Origin: *' header",
+  "description": "Youtube text search",
   "background": {
     "scripts": ["background.js"]
   },
   "content_scripts": [{
-    "matches": ["*://*.youtube.com/*"],
+    "matches": ["*://*.youtube.com/watch*"],
     "js":      ["content.js"],
     "run_at":    "document_start"
   }],
